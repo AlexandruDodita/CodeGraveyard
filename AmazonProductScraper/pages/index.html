@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Amazon Product Analyzer</title>
+  <link rel="stylesheet" href="../styles/main.css">
+  <meta name="description" content="Analyze Amazon product reviews and get AI-generated summaries to make informed purchasing decisions.">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header Section -->
+    <header class="app-header">
+      <h1>Amazon Product Analyzer</h1>
+      <p>Get AI-powered insights from product reviews to make informed purchasing decisions</p>
+      <!-- Theme Switch -->
+      <div class="theme-switch-wrapper">
+        <span class="slider-icon"><i class="fas fa-sun"></i></span>
+        <label class="theme-switch">
+          <input type="checkbox" id="theme-toggle">
+          <span class="slider"></span>
+        </label>
+        <span class="slider-icon"><i class="fas fa-moon"></i></span>
+      </div>
+    </header>
+
+    <!-- Landing Page Content -->
+    <section class="features-container">
+      <div class="feature-card">
+        <div class="feature-icon">
+          <i class="fas fa-search-dollar"></i>
+        </div>
+        <h2>Product Analyzer</h2>
+        <p>Get detailed insights about any Amazon product with AI-powered review analysis. Understand what customers love and what could be improved.</p>
+        <a href="/pages/analyzer.html" class="button">Analyze a Product</a>
+      </div>
+
+      <div class="feature-card highlight">
+        <div class="feature-icon">
+          <i class="fas fa-balance-scale"></i>
+        </div>
+        <h2>Product Comparison</h2>
+        <p>See how your competitors are doing! Compare two Amazon products side by side to understand their relative strengths and weaknesses.</p>
+        <a href="/pages/comparison.html" class="button">Compare Products</a>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p>&copy; 2025 Amazon Product Analyzer. All reviews and product data belong to their respective owners.</p>
+    </footer>
+  </div>
+
+  <script>
+    // Theme toggle functionality
+    document.addEventListener('DOMContentLoaded', () => {
+      const themeToggle = document.getElementById('theme-toggle');
+      
+      // Theme handling
+      const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
+      
+      if (prefersDarkScheme.matches) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+          themeToggle.checked = true;
+      }
+      
+      themeToggle.addEventListener('change', function() {
+          if (this.checked) {
+              document.documentElement.setAttribute('data-theme', 'dark');
+              localStorage.setItem('theme', 'dark');
+          } else {
+              document.documentElement.setAttribute('data-theme', 'light');
+              localStorage.setItem('theme', 'light');
+          }
+      });
+  
+      // Check for saved theme preference
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme) {
+          document.documentElement.setAttribute('data-theme', savedTheme);
+          themeToggle.checked = savedTheme === 'dark';
+      }
+    });
+  </script>
+</body>
+</html> 

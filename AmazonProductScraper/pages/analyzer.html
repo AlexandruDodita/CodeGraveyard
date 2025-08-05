@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Amazon Product Analyzer</title>
+  <link rel="stylesheet" href="../styles/main.css">
+  <meta name="description" content="Analyze Amazon product reviews and get AI-generated summaries to make informed purchasing decisions.">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header Section -->
+    <header class="app-header">
+      <div class="home-button-container">
+        <a href="index.html" class="home-button"><i class="fas fa-home"></i> Home</a>
+      </div>
+      <h1>Amazon Product Analyzer</h1>
+      <p>Get AI-powered insights from product reviews to make informed purchasing decisions</p>
+      <!-- Theme Switch -->
+      <div class="theme-switch-wrapper">
+        <span class="slider-icon"><i class="fas fa-sun"></i></span>
+        <label class="theme-switch">
+          <input type="checkbox" id="theme-toggle">
+          <span class="slider"></span>
+        </label>
+        <span class="slider-icon"><i class="fas fa-moon"></i></span>
+      </div>
+    </header>
+
+    <!-- Form Section -->
+    <section class="form-container">
+      <div class="card">
+        <form id="analyze-form">
+          <div class="form-group">
+            <label for="product-url">Amazon Product URL</label>
+            <input type="url" id="product-url" class="form-control" 
+                   placeholder="https://www.amazon.com/dp/B08XX..." 
+                   required>
+          </div>
+          <div id="error-message" class="error-message hidden"></div>
+          <button type="submit" class="button full-width">Analyze Product</button>
+        </form>
+      </div>
+      <!-- Loading Spinner -->
+      <div id="loading-spinner" class="spinner hidden"></div>
+    </section>
+
+    <!-- Fallback Container (shown when fetch fails) -->
+    <section id="fallback-container" class="card error-container hidden">
+      <h2>Data Loading Error</h2>
+      <div class="error-box">
+        <p>We encountered an error while trying to load the product data:</p>
+        <pre id="error-details" class="error-details"></pre>
+        
+        <div id="cors-message" class="cors-message hidden">
+          <h3>CORS Error Detected</h3>
+          <p>This appears to be a CORS (Cross-Origin Resource Sharing) error, which commonly occurs when:</p>
+          <ul>
+            <li>Running the application directly from your filesystem</li>
+            <li>Trying to access local files using JavaScript's fetch API</li>
+          </ul>
+          <p>To fix this issue, you can:</p>
+          <ol>
+            <li>Run the application through a local server instead of opening the HTML file directly</li>
+            <li>Use the sample data option below to see how the interface works</li>
+          </ol>
+        </div>
+        
+        <div id="amazon-error-message" class="amazon-error-message hidden">
+          <h3>Amazon Access Error</h3>
+          <p>We couldn't retrieve data from Amazon for this product. This might happen because:</p>
+          <ul>
+            <li>Amazon is temporarily blocking our data access requests</li>
+            <li>The product URL is invalid or the product no longer exists</li>
+            <li>Amazon's website structure has changed</li>
+          </ul>
+          <p>Suggestions:</p>
+          <ol>
+            <li>Try again later when Amazon's rate limiting may have reset</li>
+            <li>Verify the product URL is correct and still accessible</li>
+            <li>Use the sample data option below to see how the interface works</li>
+          </ol>
+        </div>
+        
+        <div id="server-error-message" class="server-error-message hidden">
+          <h3>Server Error</h3>
+          <p>Our server encountered an error while processing your request. This might happen because:</p>
+          <ul>
+            <li>The product URL is incorrect or malformed</li>
+            <li>The product page has an unusual format that our parser couldn't handle</li>
+            <li>There might be a temporary issue with our server</li>
+          </ul>
+          <p>Suggestions:</p>
+          <ol>
+            <li>Double-check the product URL to ensure it's correct</li>
+            <li>Verify that the product page loads correctly in your browser</li>
+            <li>Try again later or use the sample data option below</li>
+          </ol>
+        </div>
+      </div>
+      <div class="button-group">
+        <button id="try-fallback" class="button">Use Sample Data</button>
+        <button onclick="window.location.reload()" class="button button-secondary">Try Again</button>
+      </div>
+    </section>
+
+    <!-- Results Container (hidden by default) -->
+    <section id="results-container" class="hidden">
+      <!-- Left Ad Section -->
+      <aside class="ad-container side-ad">
+        <div>Advertisement</div>
+      </aside>
+
+      <div class="content-with-ads">
+        <!-- Main Content -->
+        <main>
+          <!-- Product Card -->
+          <section class="analyzer-product-card">
+            <div class="analyzer-product-card">
+              <a href="#" id="main-product-image-link" target="_blank" class="product-image-link">
+                <img id="product-image" class="product-image" src="" alt="Product Image">
+              </a>
+              <div class="product-details">
+                <a href="#" id="main-product-title-link" target="_blank" class="product-title-link">
+                  <h2 id="product-title" class="product-title"></h2>
+                </a>
+                <div id="product-price" class="product-price"></div>
+                <p id="product-description" class="product-description"></p>
+              </div>
+            </div>
+          </section>
+
+          <!-- DeepSeek AI Analysis (initially shown) -->
+          <section id="deepseek-analysis-container" class="card review-highlights">
+            <h2>DeepSeek AI Seller Analysis</h2>
+            <div id="deepseek-loading" class="spinner"></div>
+            <div id="deepseek-content" class="hidden">
+              <div class="pros-cons">
+                <div class="pros">
+                  <h3>Top Product Strengths</h3>
+                  <ul id="deepseek-strengths-list">
+                    <!-- List items will be inserted dynamically -->
+                  </ul>
+                </div>
+                
+                <div class="cons">
+                  <h3>Negative Trends</h3>
+                  <ul id="deepseek-issues-list">
+                    <!-- List items will be inserted dynamically -->
+                  </ul>
+                </div>
+              </div>
+              
+              <div class="buyer-personas-section">
+                <h3>Buyer Personas</h3>
+                <div id="deepseek-buyer-personas"></div>
+              </div>
+              
+              <div class="undocumented-features-section">
+                <h3>Undocumented Features</h3>
+                <div id="deepseek-undocumented-features"></div>
+              </div>
+              
+              <div class="standout-quotes-section">
+                <h3>Standout Customer Quotes</h3>
+                <div id="deepseek-standout-quotes"></div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Specifications -->
+          <section class="card">
+            <h2>Specifications</h2>
+            <table class="specs-table" id="specs-table">
+              <!-- Table rows will be inserted dynamically -->
+            </table>
+          </section>
+
+          <!-- Top Reviews -->
+          <section class="card reviews-section">
+            <h2>Top Reviews</h2>
+            <div id="reviews-list">
+              <!-- Review articles will be inserted dynamically -->
+            </div>
+            <div class="text-center" style="margin-top: 1rem;">
+              <button id="see-more-reviews-button" class="button button-secondary hidden">See More Reviews</button>
+            </div>
+          </section>
+
+          <!-- Similar Products -->
+          <section id="similar-products-container" class="card similar-products">
+            <h2>Similar Products</h2>
+            <div id="similar-products-list" class="similar-products-list">
+              <!-- Similar product items will be inserted dynamically -->
+            </div>
+          </section>
+
+          <!-- Bottom Ad -->
+          <div class="ad-container bottom-ad">
+            <div>Advertisement</div>
+          </div>
+
+          <!-- Action Buttons -->
+          <section class="action-buttons">
+            <div class="button-container">
+              <button id="analyze-another" class="button">Analyze Another Product</button>
+            </div>
+          </section>
+        </main>
+      </div>
+
+      <!-- Right Ad Section -->
+      <aside class="ad-container side-ad">
+        <div>Advertisement</div>
+      </aside>
+    </section>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p>&copy; 2025 Amazon Product Analyzer. All reviews and product data belong to their respective owners.</p>
+    </footer>
+  </div>
+
+  <script src="../scripts/js/app.js"></script>
+</body>
+</html> 

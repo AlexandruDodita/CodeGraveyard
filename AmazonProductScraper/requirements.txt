@@ -1,0 +1,10 @@
+requests==2.30.0
+beautifulsoup4==4.12.2
+lxml==4.9.3
+typing_extensions==4.8.0
+argparse==1.4.0
+urllib3>=1.26.15
+certifi>=2.0.0
+soupsieve>=2.3.2
+openai==1.6.0
+python-dotenv==1.0.0 

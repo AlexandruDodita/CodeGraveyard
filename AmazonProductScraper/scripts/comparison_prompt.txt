@@ -1,0 +1,84 @@
+You are an intelligent assistant comparing two similar Amazon products based on customer feedback and product data. Your goal is to extract clear, actionable differences that help a seller:
+
+    Position their product better
+    Understand competitive weaknesses
+    Identify features to emphasize, improve, or de-emphasize
+
+PRODUCT A: Meet your go-to device for on-the-go family fun – Galaxy Tab A9+. A bright, engaging 11”Screen1is perfect for every family member to do their thing. Whether they’re enjoying ashow, unwinding with a game or catching up on schoolwork or day-to-day tasks, anupgraded chipset makes every experience feel smooth and easy. You can even openmultiple apps at the same time and get all your everyday tasks done quickly.1Measured diagonally, the Galaxy Tab A9+ screen size is 11.0” in the full rectangle and 10.9" accounting for the rounded corners. Actual viewable area is less due to the rounded corners.2Portion of storage / memory occupied by existing content.3MicroSD card sold separately.4Certain applications may not support Multi-Active Windows use.5Samsung Kids app comes pre-loaded on Galaxy Tab A9+.6Galaxy and non-Galaxy devices: Smartphones and tablets with Android OS version 10.0 (Q) and One UI 2.1 or above, PCs running Windows 10 or later. Requires Samsung account and Wi-Fi and Bluetooth connection. Quick Share to iOS and Android devices available by sending shared link: individual files shared cannot exceed 3GB (for a total of 5GB per day) and link will expire after two days; requires a Samsung account and internet connection. Galaxy to Galaxy devices: Smartphones and tablets with Android OS version 10.0 (Q) and One UI 2.1 or above, PCs running Windows 10 and later. Requires Samsung account and Wi-Fi and Bluetooth connection between devices.7Feature supported on mobile devices running UI 2.5 or later and TV models 2018 U7400 series or upper model. Must be logged in to the same Samsung account and be on the same Wi-Fi network. TV must be registered to SmartThings app.8Requires devices to have One UI 2.5 or later. Devices must be logged in to the same Samsung account and be on the same Wi-Fi network.
+Price: $159.99
+Average Rating: 4.8
+Specifications: {"Standing screen display size":"‎11 Inches","Screen Resolution":"‎1920 x 1200","Max Screen Resolution":"‎1920 X 1200 (WUXGA) Pixels","RAM":"‎4 GB","Hard Drive":"‎64 GB","Chipset Brand":"‎Qualcomm","Card Description":"‎Integrated","Wireless Type":"‎802.11ac"}
+
+PRODUCT A REVIEWS:
+Review by Kels Nicole (5 stars):
+We bought 2 of these for our kids for Christmas and they are perfect!  These tablets are very kid friendly and there are several options to customize the controls.  There is so much you can do on this tablet; the options are limitless!The screen is large and has a very clear picture.  Even the camer ...
+
+Review by Cecilia Sullivan (5 stars):
+I had an older Galaxy Tab A (2019), but a friend broke it. Android tablet computers have really improved since I bought the old Samsung.I have a Samsung laptop and smartphone; they connect seamlessly and transferring data and media is a breeze.I knew the new tablet would be another Samsung.What I wa ...
+
+Review by Aly K (5 stars):
+I bought this tablet for my 4 year old and let me tell you why and how I came to this one:My husband gave my toddler his old Android Galaxy tablet a year ago and it has since died. It was a very old tablet but did what we needed it to do. When it died, I found an Amazon fire kids tablet, which was n ...
+
+Review by HSuke (4 stars):
+I guess it's really good for its price. The screen looks amazing, and it works fine.The problem with the tablet is that it's really, really slow. It feel like I'm using a 6-year old phone. Every button click and menu action has a 0.2s to 0.5s delay. Even using the keyboard has a significant delay ,  ...
+
+Review by Sharon D (5 stars):
+This tablet is awesome!! Beautiful display, especially great for streaming movies and shows. It was super easy to set up. The charging didn't take more than 2 hours (using a 45W charging block that I ordered separately). Sound is plenty good, but is absolutely GREAT with the JBL earphones I ordered  ...
+
+PRODUCT B: Be unstoppable with the unprecedented speed of the world’s best desktop processors. AMD Ryzen 5000 Series processors deliver the ultimate in high performance, whether you’re playing the latest games, designing the next skyscraper or crunching scientific data. With AMD Ryzen, you’re always in the lead. The Simple and Powerful Overclocking Utility for AMD Ryzen processors.
+Price: $158.17
+Average Rating: 5
+Specifications: {"Processor":"‎4.7 GHz amd_ryzen_7"}
+
+PRODUCT B REVIEWS:
+Review by Darkoasis (5 stars):
+I have had this CPU for around exactly one year now. Normally I do all my tech reviews fairly early but I wanted to really use this chip, overclock it, game, and do lighting editing as well. To start off my full system is a Ryzen 5800X, Asus X570-Pro board, 32GB of 3600mhz G.Skill CL16 memory (4x8GB ...
+
+Review by Noah Clark (5 stars):
+so, i was one of the (statistically few) who hit the silicon lottery and struck dirt. basically, my 5800x was defective. this is just a PSA, if you encounter BSODs/crashes to reboot/fatal hardware errors after installing your new CPU, it is likely defective. i was getting WHEA_UNCORRECTABLE_ERROR at ...
+
+Review by Brandon D. (5 stars):
+Scored it for a great price which made upgrading from my 3600 a great value. 8 cores, super high boost speeds, it performs great. AMDs support of the AM4 platform for so long has really allowed people to stretch out the lifespan of their older systems providing a nice upgrade path even still.I  read ...
+
+Review by Irving (5 stars):
+El producto es muy bueno. Es un procesador que por sus características permite sacar el máximo provecho a juegos (razón por la que yo lo compré). Actualmente tengo mi computadora junto con una rtx 3060 y me parece que el rendimiento es óptimo y de mucha calidad.Mi computadora tiene una refrigeración ...
+
+Review by Mateus (5 stars):
+Produto muito bom mesmo, só tenho elogios pois é extremamente potente e quando soma com uma 4060 e 32GB de RAM fica muito top, e outro ponto que me deixou muito feliz foi o preço que foi muito abaixo do preço atual. O ponto negativo foi apenas a embalagem pois não veio tão bem protegido como outros  ...
+
+Output a structured JSON with the following schema
+{
+  "product_advantages": [
+    {
+      "feature": "string (e.g., 'Battery Life')",
+      "better_product": "A or B",
+      "summary": "string (why this product wins here)",
+      "quote": "string (optional review quote that supports it)"
+    }
+  ],
+  "critical_weaknesses": [
+    {
+      "feature": "string (e.g., 'Build Quality')",
+      "worse_product": "A or B",
+      "issue": "string (what customers complained about)",
+      "severity": "low | medium | high"
+    }
+  ],
+  "shared_strengths": [
+    "string", "string", "string"
+  ],
+  "unique_selling_points": {
+    "product_A": [
+      "string (selling point unique to A)"
+    ],
+    "product_B": [
+      "string (selling point unique to B)"
+    ]
+  },
+  "buyer_recommendation": "string (short recommendation on which buyer would prefer A vs B, with reasoning)"
+}
+
+Focus on what matters to buyers, not spec-sheet trivia.
+Use review-backed insights, not assumptions.
+Be blunt but fair. If one product clearly wins on something, say it.
+If a product is better for a certain audience or use case, highlight that in the buyer_recommendation

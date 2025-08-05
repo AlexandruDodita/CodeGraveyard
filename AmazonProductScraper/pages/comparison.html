@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product Comparison - Amazon Product Analyzer</title>
+  <link rel="stylesheet" href="../styles/main.css">
+  <meta name="description" content="Compare two Amazon products side by side to understand their relative strengths and weaknesses.">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header Section -->
+    <header class="app-header">
+      <div class="home-button-container">
+        <a href="index.html" class="home-button"><i class="fas fa-home"></i> Home</a>
+      </div>
+      <h1>Amazon Product Comparison</h1>
+      <p>See how your competitors are doing! Compare two products to understand their strengths and weaknesses</p>
+      <!-- Theme Switch -->
+      <div class="theme-switch-wrapper">
+        <span class="slider-icon"><i class="fas fa-sun"></i></span>
+        <label class="theme-switch">
+          <input type="checkbox" id="theme-toggle">
+          <span class="slider"></span>
+        </label>
+        <span class="slider-icon"><i class="fas fa-moon"></i></span>
+      </div>
+    </header>
+
+    <!-- Comparison Form Section -->
+    <section class="form-container">
+      <div class="card">
+        <form id="comparison-form">
+          <div class="comparison-inputs">
+            <div class="product-input">
+              <h3>Product 1</h3>
+              <div class="form-group">
+                <label for="product-url-1">Amazon Product URL</label>
+                <input type="url" id="product-url-1" class="form-control" 
+                      placeholder="https://www.amazon.com/dp/B08XX..." 
+                      required>
+              </div>
+            </div>
+
+            <div class="product-input">
+              <h3>Product 2</h3>
+              <div class="form-group">
+                <label for="product-url-2">Amazon Product URL</label>
+                <input type="url" id="product-url-2" class="form-control" 
+                      placeholder="https://www.amazon.com/dp/B08XX..." 
+                      required>
+              </div>
+            </div>
+          </div>
+
+          <div id="comparison-error-message" class="error-message hidden"></div>
+          <button type="submit" class="button full-width">Compare Products</button>
+        </form>
+      </div>
+      <!-- Loading Spinner -->
+      <div id="comparison-loading-spinner" class="spinner hidden"></div>
+    </section>
+
+    <!-- Google Ads Top -->
+    <div class="google-ad-container">
+      <div class="google-ad">
+        <div class="ad-label">Advertisement</div>
+        <div id="ad-top" class="ad-content"></div>
+      </div>
+    </div>
+
+    <!-- Comparison Results Section -->
+    <section id="comparison-results-container" class="results-container hidden">
+      <!-- New Layout Structure Based on Paint Sketch -->
+      <div class="new-comparison-layout">
+        <!-- Left Ad -->
+        <div class="side-ad">
+          <div class="google-ad">
+            <div class="ad-label">Advertisement</div>
+            <div id="ad-left" class="ad-content"></div>
+          </div>
+        </div>
+
+        <!-- Product Cards Row -->
+        <div class="products-row">
+          <!-- Product 1 Card -->
+          <div class="product-card" id="product1-container">
+            <div class="product-content" id="product1-content">
+              <!-- Will be filled by JavaScript -->
+            </div>
+          </div>
+
+          <!-- Product 2 Card -->
+          <div class="product-card" id="product2-container">
+            <div class="product-content" id="product2-content">
+              <!-- Will be filled by JavaScript -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="comparison-content">
+          <!-- Specification Comparison Table -->
+          <div class="comparison-section stats-comparison">
+            <h3><i class="fas fa-table"></i> Specification Comparison</h3>
+            <div class="specs-table" id="specs-comparison-table">
+              <!-- Will be filled by JavaScript -->
+            </div>
+          </div>
+
+          <!-- Product Advantages Section -->
+          <div class="comparison-section advantages-section">
+            <h3><i class="fas fa-trophy"></i> Product Advantages</h3>
+            <div id="product-advantages">
+              <!-- Will be filled by JavaScript -->
+            </div>
+          </div>
+
+          <!-- Critical Weaknesses Section -->
+          <div class="comparison-section weaknesses-section">
+            <h3><i class="fas fa-exclamation-triangle"></i> Critical Weaknesses</h3>
+            <div id="critical-weaknesses">
+              <!-- Will be filled by JavaScript -->
+            </div>
+          </div>
+
+          <!-- Shared Strengths Section -->
+          <div class="comparison-section shared-section">
+            <h3><i class="fas fa-handshake"></i> Shared Strengths</h3>
+            <div id="shared-strengths">
+              <!-- Will be filled by JavaScript -->
+            </div>
+          </div>
+
+          <!-- Unique Selling Points Section -->
+          <div class="comparison-section selling-points-section">
+            <h3><i class="fas fa-star"></i> Unique Selling Points</h3>
+            <div id="unique-selling-points">
+              <!-- Will be filled by JavaScript -->
+            </div>
+          </div>
+
+          <!-- Buyer Recommendation Section -->
+          <div class="comparison-section recommendation-section">
+            <h3><i class="fas fa-shopping-cart"></i> Buyer Recommendation</h3>
+            <div id="buyer-recommendation">
+              <!-- Will be filled by JavaScript -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Ad -->
+        <div class="side-ad">
+          <div class="google-ad">
+            <div class="ad-label">Advertisement</div>
+            <div id="ad-right" class="ad-content"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Compare Different Products Button -->
+      <div class="action-buttons">
+        <button id="compare-different" class="button secondary-button">Compare Different Products</button>
+      </div>
+    </section>
+
+    <!-- Google Ads Bottom -->
+    <div class="google-ad-container">
+      <div class="google-ad">
+        <div class="ad-label">Advertisement</div>
+        <div id="ad-bottom" class="ad-content"></div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p>&copy; 2025 Amazon Product Analyzer. All reviews and product data belong to their respective owners.</p>
+    </footer>
+  </div>
+
+  <script src="../scripts/js/comparison.js"></script>
+</body>
+</html> 
