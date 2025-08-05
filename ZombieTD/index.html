@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tower Defense</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <!-- Game Canvas -->
+        <canvas id="game-canvas"></canvas>
+        
+        <!-- Start Menu -->
+        <div id="start-menu" class="menu">
+            <h1>Tower Defense</h1>
+            <p>Defend your tower against waves of enemies!</p>
+            <button id="start-game-btn" class="btn">Start Game</button>
+        </div>
+        
+        <!-- Game Over Menu -->
+        <div id="game-over-menu" class="menu hidden">
+            <h1>Game Over</h1>
+            <p>Your base was destroyed!</p>
+            <p>Final Score: <span id="final-score">0</span></p>
+            <button id="restart-game-btn" class="btn">Play Again</button>
+        </div>
+        
+        <!-- Sidebar -->
+        <button id="sidebar-toggle" class="btn sidebar-toggle-btn hidden">▶</button>
+        <aside id="sidebar" class="collapsed">
+            <div class="sidebar-content">
+                <h2>Towers</h2>
+                <div class="tower-list">
+                    <button class="tower-button" data-tower-type="cannon">
+                        <div class="tower-icon cannon-icon"></div>
+                        <div class="tower-info">
+                            <span class="tower-name">Cannon Tower</span>
+                            <span class="tower-cost">50g</span>
+                        </div>
+                        <div class="tower-tooltip">
+                            <p>Damage: 20</p>
+                            <p>Range: 2.5</p>
+                            <p>Fire Rate: 0.8/s</p>
+                        </div>
+                    </button>
+                    
+                    <button class="tower-button" data-tower-type="sniper">
+                        <div class="tower-icon sniper-icon"></div>
+                        <div class="tower-info">
+                            <span class="tower-name">Sniper Tower</span>
+                            <span class="tower-cost">75g</span>
+                        </div>
+                        <div class="tower-tooltip">
+                            <p>Damage: 30</p>
+                            <p>Range: 5</p>
+                            <p>Fire Rate: 0.5/s</p>
+                        </div>
+                    </button>
+                    
+                    <button class="tower-button" data-tower-type="wall">
+                        <div class="tower-icon wall-icon"></div>
+                        <div class="tower-info">
+                            <span class="tower-name">Wall</span>
+                            <span class="tower-cost">10g</span>
+                        </div>
+                        <div class="tower-tooltip">
+                            <p>Health: 100</p>
+                            <p>Blocks enemy path</p>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </aside>
+        
+        <!-- Sell/Upgrade Dialog -->
+        <div id="sell-upgrade-dialog" class="dialog hidden">
+            <div class="dialog-header">
+                <h3 id="dialog-title">Tower</h3>
+                <button id="close-dialog-btn" class="btn close-btn">×</button>
+            </div>
+            <div id="dialog-stats" class="dialog-stats">
+                <!-- Stats will be filled by JS -->
+            </div>
+            <div class="dialog-buttons">
+                <button id="sell-btn" class="btn sell-btn">Sell (0g)</button>
+                <button id="upgrade-btn" class="btn upgrade-btn">Upgrade (0g)</button>
+            </div>
+        </div>
+        
+        <!-- Game HUD -->
+        <div id="game-ui" class="hidden">
+            <div id="stats">
+                <div class="stat">Wave: <span id="wave-counter">1</span></div>
+                <div class="stat">💰 <span id="gold-counter">100</span></div>
+                <div class="stat">Base Health: <span id="health-counter">100</span></div>
+            </div>
+            <div id="controls">
+                <button id="start-wave" class="btn">Start Wave</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="game/game.js" type="module"></script>
+</body>
+</html> 

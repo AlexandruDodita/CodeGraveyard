@@ -1,0 +1,16 @@
+{
+  "name": "tower-defense",
+  "version": "1.0.0",
+  "description": "Desktop Tower Defense Game",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron . --no-sandbox",
+    "build": "electron-builder"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^25.0.0",
+    "electron-builder": "^26.0.12"
+  }
+}
