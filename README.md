@@ -19,4 +19,13 @@ Notes:
 - Needs a deepseek API key. 
 - Uses bs4, which means it's probably broken because Amazon uses dynamic page loading. A better idea would have been to use Selenium instead but that's no longer my problem.
 
+### 2. 🧱 ZombieTD - Tower Defense Game
+
+A browser-based tower defense game built with vanilla JS, Canvas, and CSS featuring enemy pathfinding, tile-based maps, tower upgrades, resource management, and progressively harder waves. Modular and functional. 
+
+Notes:
+- There is an itch.io upload of this game somewhere. Remind me to upload the link. Or don't.
+- It's more of an experiment than anything noteworthy. It was part of a one day to make a game challenge.
+
+
 ---
