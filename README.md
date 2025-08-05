@@ -27,5 +27,13 @@ Notes:
 - There is an itch.io upload of this game somewhere. Remind me to upload the link. Or don't.
 - It's more of an experiment than anything noteworthy. It was part of a one day to make a game challenge.
 
+### 3. 🔐 Bluetooth OTP Digital Safe
+
+An IoT-based digital safe system using Raspberry Pi Pico W that delivers 6-digit OTP codes via Bluetooth every 60 seconds for secure web-based unlocking. Features include servo-based locking, fallback offline mode, live status monitoring, and a mobile-friendly control panel.
+
+Notes:
+
+- A demo to the project can be found at: https://www.youtube.com/watch?v=6JitznnkUbk
+- The project was part of a college project. In retrospective, probably way too simplistic but an interesting proof of concept.
 
 ---
