@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flashcard App</title>
+    <title>my flashcards</title>
     <style>
         * {
             margin: 0;
@@ -11,1365 +11,3141 @@
             box-sizing: border-box;
         }
         
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
-            color: #e2e8f0;
-            min-height: 100vh;
+        :root {
+            --bg-dark: #1e1e2e;
+            --bg-card: #313244;
+            --bg-hover: #45475a;
+            --border: #585b70;
+            --text: #cdd6f4;
+            --text-dim: #9399b2;
+            --text-muted: #6c7086;
+            --accent: #cba6f7;
+            --success: #a6e3a1;
+            --danger: #f38ba8;
+            --warning: #f9e2af;
+            --info: #89b4fa;
         }
         
-        .container {
+        [data-theme="light"] {
+            --bg-dark: #eff1f5;
+            --bg-card: #ffffff;
+            --bg-hover: #e6e9ef;
+            --border: #ccd0da;
+            --text: #4c4f69;
+            --text-dim: #6c6f85;
+            --text-muted: #9ca0b0;
+            --accent: #8839ef;
+            --success: #40a02b;
+            --danger: #d20f39;
+            --warning: #df8e1d;
+            --info: #1e66f5;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            background-image: 
+                repeating-linear-gradient(
+                    45deg,
+                    transparent,
+                    transparent 10px,
+                    rgba(255,255,255,.01) 10px,
+                    rgba(255,255,255,.01) 20px
+                );
+            transition: all 0.3s ease;
+        }
+        
+        .main-wrap {
             max-width: 1200px;
             margin: 0 auto;
-            background: #2d3748;
-            min-height: 100vh;
+            padding: 0 20px;
+        }
+        
+        .top-bar {
+            background: var(--bg-card);
+            margin: 20px -20px 0;
+            padding: 18px 25px 20px;
+            border-radius: 15px 15px 0 0;
+            box-shadow: 0 2px 0 rgba(0,0,0,0.1);
+            position: relative;
+        }
+        
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .logo {
+            font-size: 26px;
+            font-weight: bold;
+            color: var(--warning);
+            display: inline-block;
+            transform: rotate(-2deg);
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+        }
+        
+        .header-tools {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .streak-badge {
+            background: var(--accent);
+            color: var(--bg-dark);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+            animation: pulse 2s ease infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .theme-toggle {
+            background: var(--bg-hover);
+            border: 2px solid var(--border);
+            border-radius: 20px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.3s;
+        }
+        
+        .theme-toggle:hover {
+            transform: rotate(180deg);
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-left: 5px;
+        }
+        
+        .tab-btn {
+            background: transparent;
+            color: var(--text-dim);
+            border: 2px solid transparent;
+            padding: 8px 18px;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 14px;
+            transition: all 0.2s;
+            position: relative;
+            top: 2px;
+        }
+        
+        .tab-btn:hover {
+            background: rgba(203, 166, 247, 0.1);
+        }
+        
+        .tab-btn.on {
+            background: var(--bg-dark);
+            border-color: var(--accent);
+            border-bottom-color: var(--bg-dark);
+            color: var(--accent);
+            font-weight: bold;
+        }
+        
+        .main-content {
+            padding: 30px 5px;
+        }
+        
+        .tab-page {
+            display: none;
+        }
+        
+        .tab-page.show {
+            display: block;
+            animation: popIn 0.3s ease;
+        }
+        
+        @keyframes popIn {
+            from { 
+                opacity: 0; 
+                transform: scale(0.95) translateY(10px);
+            }
+            to { 
+                opacity: 1; 
+                transform: scale(1) translateY(0);
+            }
+        }
+        
+        /* Study Tab */
+        .upload-box {
+            background: var(--bg-card);
+            border: 3px dashed var(--border);
+            border-radius: 20px;
+            padding: 45px 30px;
+            text-align: center;
+            margin-bottom: 25px;
+            position: relative;
+            transition: all 0.3s;
+        }
+        
+        .upload-box.drag-over {
+            border-color: var(--info);
+            background: var(--bg-hover);
+            transform: scale(1.02);
+        }
+        
+        .upload-box::before {
+            content: '📂';
+            font-size: 64px;
+            display: block;
+            margin-bottom: 15px;
+            animation: bounce 2s ease infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .upload-label {
+            cursor: pointer;
+            color: var(--info);
+            font-size: 18px;
+            font-weight: bold;
+            display: block;
+            margin-bottom: 10px;
+        }
+        
+        .upload-label:hover {
+            text-decoration: underline wavy;
+        }
+        
+        .format-note {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-family: monospace;
+            margin-top: 15px;
+        }
+        
+        .import-buttons {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        .recent-decks {
+            background: var(--bg-card);
+            padding: 15px 20px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .recent-title {
+            font-size: 14px;
+            color: var(--text-dim);
+            margin-bottom: 10px;
+        }
+        
+        .recent-list {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .recent-deck {
+            background: var(--bg-hover);
+            padding: 8px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+        
+        .recent-deck:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+        
+        .options {
+            background: var(--bg-card);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .options-title {
+            font-size: 16px;
+            color: var(--warning);
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+        
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .option-group {
             display: flex;
             flex-direction: column;
+            gap: 10px;
         }
         
-        .header {
-            background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
-            padding: 16px 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .header h1 {
-            color: white;
-            font-size: 24px;
-            font-weight: 600;
-        }
-        
-        .nav-tabs {
-            display: flex;
-            gap: 8px;
-        }
-        
-        .nav-tab {
-            padding: 8px 16px;
-            background: rgba(255,255,255,0.1);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-weight: 500;
-        }
-        
-        .nav-tab:hover {
-            background: rgba(255,255,255,0.2);
-        }
-        
-        .nav-tab.active {
-            background: white;
-            color: #3182ce;
-        }
-        
-        .content {
-            flex: 1;
-            padding: 24px;
-        }
-        
-        .page {
-            display: none;
-        }
-        
-        .page.active {
-            display: block;
-        }
-        
-        /* Study Page Styles */
-        .file-section {
-            background: #4a5568;
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 24px;
-            border: 2px dashed #718096;
-            text-align: center;
-            transition: all 0.3s ease;
-        }
-        
-        .file-section:hover {
-            border-color: #4299e1;
-            background: #2d3748;
-        }
-        
-        .file-input-label {
-            cursor: pointer;
-            display: block;
-            color: #e2e8f0;
-            font-weight: 500;
-        }
-        
-        .file-input-label:hover {
-            color: #4299e1;
-        }
-        
-        .format-info {
-            background: #1a202c;
-            border-radius: 8px;
-            padding: 16px;
-            margin-top: 16px;
-            font-family: 'Courier New', monospace;
+        .option-label {
             font-size: 13px;
-            color: #a0aec0;
-            border-left: 4px solid #4299e1;
-        }
-        
-        .settings {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            margin-bottom: 24px;
-            padding: 16px;
-            background: #4a5568;
-            border-radius: 12px;
-        }
-        
-        .settings label {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: #e2e8f0;
-            font-weight: 500;
-            cursor: pointer;
-        }
-        
-        .settings input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            accent-color: #4299e1;
-        }
-        
-        .game-area {
-            display: none;
-        }
-        
-        .score-section {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #1a202c;
-            padding: 16px 24px;
-            border-radius: 12px;
-            margin-bottom: 24px;
-            border: 1px solid #4a5568;
-        }
-        
-        .score-item {
-            text-align: center;
-        }
-        
-        .score-label {
-            font-size: 12px;
-            color: #a0aec0;
+            color: var(--text-dim);
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
         
-        .score-value {
-            font-size: 24px;
-            font-weight: 700;
-            color: #4299e1;
-            margin-top: 4px;
-        }
-        
-        .flashcard {
-            background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
-            border: 1px solid #4a5568;
-            border-radius: 16px;
-            padding: 48px 32px;
-            margin: 24px 0;
-            text-align: center;
-            min-height: 200px;
+        .mode-select {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            line-height: 1.6;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
+            gap: 5px;
+            flex-wrap: wrap;
         }
         
-        .flashcard:hover {
-            border-color: #4299e1;
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(66, 153, 225, 0.1);
-        }
-        
-        .flashcard.showing-answer {
-            background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
-            border-color: #4299e1;
-        }
-        
-        .click-hint {
-            position: absolute;
-            bottom: 16px;
-            right: 16px;
-            font-size: 12px;
-            color: #a0aec0;
-            opacity: 0.7;
-        }
-        
-        .answer-content {
-            width: 100%;
-        }
-        
-        .answer-image {
-            max-width: 100%;
-            max-height: 300px;
-            border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-        }
-        
-        .answer-section {
-            margin-top: 24px;
-        }
-        
-        .text-input-section {
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 24px;
-        }
-        
-        .answer-input {
-            background: #1a202c;
-            border: 2px solid #4a5568;
+        .mode-btn {
+            background: var(--bg-hover);
+            border: 2px solid var(--border);
+            padding: 5px 12px;
             border-radius: 8px;
-            padding: 12px 16px;
-            color: #e2e8f0;
-            font-size: 16px;
-            width: 300px;
-            transition: border-color 0.3s ease;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+            color: var(--text);
         }
         
-        .answer-input:focus {
-            outline: none;
-            border-color: #4299e1;
+        .mode-btn.active {
+            background: var(--accent);
+            color: var(--bg-dark);
+            border-color: var(--accent);
         }
         
-        .answer-input::placeholder {
-            color: #a0aec0;
-        }
-        
-        .buttons {
+        .check-wrap {
             display: flex;
-            gap: 12px;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+        
+        .check-wrap input {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--accent);
+        }
+        
+        .check-wrap label {
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .goal-input {
+            background: var(--bg-hover);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 12px;
+            width: 100px;
+            color: var(--text);
+            font-size: 14px;
+        }
+        
+        .study-zone {
+            display: none;
+        }
+        
+        .session-header {
+            background: var(--bg-card);
+            padding: 15px 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .session-info {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        .session-deck {
+            font-size: 14px;
+            color: var(--text-dim);
+        }
+        
+        .session-timer {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--warning);
+        }
+        
+        .scoreboard {
+            background: linear-gradient(135deg, var(--bg-card), var(--bg-hover));
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 20px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .score-bit {
+            text-align: center;
+        }
+        
+        .score-tiny {
+            font-size: 10px;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            letter-spacing: 1px;
+        }
+        
+        .score-big {
+            font-size: 28px;
+            font-weight: bold;
+            color: var(--warning);
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+            margin-top: 5px;
+        }
+        
+        .progress-bar {
+            background: var(--bg-card);
+            height: 8px;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--success), var(--accent));
+            transition: width 0.3s ease;
+        }
+        
+        .the-card {
+            background: var(--bg-hover);
+            border: 3px solid var(--border);
+            border-radius: 20px;
+            padding: 50px 35px;
+            min-height: 250px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            text-align: center;
+            cursor: pointer;
+            margin: 35px 0;
+            position: relative;
+            transform: rotate(0.5deg);
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            box-shadow: 5px 5px 0 rgba(0,0,0,0.1);
+        }
+        
+        .the-card:hover {
+            transform: rotate(0deg) scale(1.05);
+            box-shadow: 8px 8px 0 rgba(0,0,0,0.1);
+        }
+        
+        .the-card.flipped {
+            background: var(--info);
+            color: var(--bg-dark);
+            border-color: var(--bg-dark);
+            transform: rotate(-0.5deg);
+        }
+        
+        .card-text {
+            font-size: 22px;
+            line-height: 1.5;
+        }
+        
+        .card-text strong {
+            color: var(--accent);
+        }
+        
+        .card-text em {
+            color: var(--warning);
+        }
+        
+        .card-text code {
+            background: var(--bg-card);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        
+        .flip-tip {
+            position: absolute;
+            bottom: 15px;
+            right: 20px;
+            font-size: 11px;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+        
+        .card-img {
+            max-width: 90%;
+            max-height: 280px;
+            border-radius: 10px;
+            border: 3px solid var(--bg-dark);
+        }
+        
+        .card-audio {
+            width: 100%;
+            max-width: 300px;
+        }
+        
+        .difficulty-indicator {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            display: flex;
+            gap: 5px;
+        }
+        
+        .diff-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--bg-card);
+            opacity: 0.3;
+        }
+        
+        .diff-dot.active {
+            opacity: 1;
+        }
+        
+        .diff-dot.easy { background: var(--success); }
+        .diff-dot.medium { background: var(--warning); }
+        .diff-dot.hard { background: var(--danger); }
+        
+        .action-zone {
+            margin-top: 30px;
+        }
+        
+        .type-row {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 25px;
+        }
+        
+        .type-box {
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 20px;
+            font-size: 16px;
+            color: var(--text);
+            width: 280px;
+            font-family: inherit;
+        }
+        
+        .type-box:focus {
+            outline: none;
+            border-color: var(--info);
+            box-shadow: 0 0 0 3px rgba(137, 180, 250, 0.2);
+        }
+        
+        .feedback-msg {
+            text-align: center;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: bold;
+            display: none;
+        }
+        
+        .feedback-msg.correct {
+            background: var(--success);
+            color: var(--bg-dark);
+        }
+        
+        .feedback-msg.partial {
+            background: var(--warning);
+            color: var(--bg-dark);
+        }
+        
+        .feedback-msg.wrong {
+            background: var(--danger);
+            color: white;
+        }
+        
+        .mc-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .mc-option {
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            padding: 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        
+        .mc-option:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+        
+        .mc-option.selected {
+            background: var(--accent);
+            color: var(--bg-dark);
+            border-color: var(--accent);
+        }
+        
+        .mc-option.correct {
+            background: var(--success);
+            color: var(--bg-dark);
+            border-color: var(--success);
+        }
+        
+        .mc-option.wrong {
+            background: var(--danger);
+            color: white;
+            border-color: var(--danger);
+        }
+        
+        .btns {
+            display: flex;
+            gap: 15px;
             justify-content: center;
             flex-wrap: wrap;
         }
         
         .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
+            padding: 12px 25px;
+            border: 2px solid;
+            border-radius: 25px;
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: bold;
             cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 14px;
+            transition: all 0.2s;
+            text-transform: lowercase;
+            position: relative;
+            top: 0;
+            background: var(--bg-card);
+            color: var(--text);
         }
         
-        .btn-primary {
-            background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+        .btn:hover {
+            top: -2px;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.3);
+        }
+        
+        .btn:active {
+            top: 0;
+            box-shadow: none;
+        }
+        
+        .btn-go {
+            background: var(--success);
+            border-color: var(--success);
+            color: var(--bg-dark);
+        }
+        
+        .btn-nope {
+            background: var(--danger);
+            border-color: var(--danger);
             color: white;
         }
         
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(66, 153, 225, 0.3);
+        .btn-next {
+            background: transparent;
+            border-color: var(--text-muted);
+            color: var(--text-muted);
         }
         
-        .btn-success {
-            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
-            color: white;
+        .btn-submit {
+            background: var(--info);
+            border-color: var(--info);
+            color: var(--bg-dark);
         }
         
-        .btn-success:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(72, 187, 120, 0.3);
+        .btn-warning {
+            background: var(--warning);
+            border-color: var(--warning);
+            color: var(--bg-dark);
         }
         
-        .btn-danger {
-            background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
-            color: white;
+        .diff-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 15px;
         }
         
-        .btn-danger:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(245, 101, 101, 0.3);
+        .diff-btn {
+            padding: 8px 15px;
+            border-radius: 15px;
+            font-size: 13px;
         }
         
-        .btn-secondary {
-            background: #4a5568;
-            color: #e2e8f0;
-            border: 1px solid #718096;
-        }
-        
-        .btn-secondary:hover {
-            background: #2d3748;
-            border-color: #a0aec0;
-        }
-        
-        .completion {
+        .done-box {
+            background: linear-gradient(135deg, var(--success), var(--accent));
+            color: var(--bg-dark);
+            padding: 50px;
+            border-radius: 20px;
             text-align: center;
-            padding: 48px 32px;
-            background: linear-gradient(135deg, #22543d 0%, #2f855a 100%);
-            border-radius: 16px;
-            margin: 24px 0;
+            margin: 40px auto;
+            max-width: 500px;
             display: none;
+            transform: rotate(-1deg);
+            box-shadow: 5px 5px 0 rgba(0,0,0,0.1);
         }
         
-        .completion h2 {
-            color: #9ae6b4;
-            font-size: 28px;
-            margin-bottom: 16px;
+        .done-box h2 {
+            font-size: 36px;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.1);
         }
         
-        .completion p {
-            color: #c6f6d5;
-            font-size: 16px;
-            margin-bottom: 8px;
+        .final-score {
+            font-size: 48px;
+            font-weight: bold;
+            margin: 20px 0;
+            text-shadow: 3px 3px 0 rgba(0,0,0,0.1);
         }
         
-        /* Create Page Styles */
-        .create-form {
-            background: #4a5568;
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 24px;
-        }
-        
-        .form-group {
+        .goal-status {
+            font-size: 18px;
             margin-bottom: 20px;
         }
         
-        .form-label {
+        /* Create Tab */
+        .make-card {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 2px solid var(--border);
+        }
+        
+        .make-title {
+            font-size: 22px;
+            color: var(--accent);
+            margin-bottom: 25px;
+            text-align: center;
+            transform: rotate(-1deg);
+        }
+        
+        .field {
+            margin-bottom: 20px;
+        }
+        
+        .field label {
             display: block;
             margin-bottom: 8px;
-            color: #e2e8f0;
-            font-weight: 500;
-        }
-        
-        .form-input, .form-textarea, .form-select {
-            width: 100%;
-            background: #1a202c;
-            border: 2px solid #4a5568;
-            border-radius: 8px;
-            padding: 12px 16px;
-            color: #e2e8f0;
-            font-size: 16px;
-            transition: border-color 0.3s ease;
-        }
-        
-        .form-input:focus, .form-textarea:focus, .form-select:focus {
-            outline: none;
-            border-color: #4299e1;
-        }
-        
-        .form-textarea {
-            resize: vertical;
-            min-height: 100px;
-        }
-        
-        .flashcards-list {
-            background: #1a202c;
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 24px;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-        
-        .flashcard-item {
-            background: #4a5568;
-            border-radius: 8px;
-            padding: 16px;
-            margin-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-        }
-        
-        .flashcard-content {
-            flex: 1;
-        }
-        
-        .flashcard-question {
-            font-weight: 600;
-            color: #4299e1;
-            margin-bottom: 8px;
-        }
-        
-        .flashcard-answer {
-            color: #a0aec0;
-        }
-        
-        .flashcard-actions {
-            display: flex;
-            gap: 8px;
-        }
-        
-        .btn-small {
-            padding: 6px 12px;
-            font-size: 12px;
-        }
-        
-        /* Results Page Styles */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-        
-        .stat-card {
-            background: #4a5568;
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            border: 1px solid #718096;
-        }
-        
-        .stat-value {
-            font-size: 32px;
-            font-weight: 700;
-            color: #4299e1;
-            margin-bottom: 8px;
-        }
-        
-        .stat-label {
-            color: #a0aec0;
+            color: var(--warning);
             font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            font-weight: bold;
         }
         
-        .chart-container {
-            background: #4a5568;
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 24px;
-            height: 400px;
-            position: relative;
+        .field textarea,
+        .field input,
+        .field select {
+            width: 100%;
+            background: var(--bg-dark);
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            padding: 10px 15px;
+            color: var(--text);
+            font-size: 15px;
+            font-family: inherit;
         }
         
-        .chart-title {
-            color: #e2e8f0;
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 20px;
-            text-align: center;
+        .field textarea {
+            min-height: 80px;
+            resize: vertical;
         }
         
-        .results-table {
-            background: #4a5568;
-            border-radius: 12px;
+        .field input:focus,
+        .field textarea:focus,
+        .field select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(203, 166, 247, 0.2);
+        }
+        
+        .tag-input-wrapper {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .tag-list {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        
+        .tag {
+            background: var(--accent);
+            color: var(--bg-dark);
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .tag-remove {
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        .rich-editor {
+            background: var(--bg-dark);
+            border: 2px solid var(--border);
+            border-radius: 10px;
             overflow: hidden;
         }
         
-        .table-header {
-            background: #1a202c;
-            padding: 16px 20px;
-            border-bottom: 1px solid #718096;
+        .editor-toolbar {
+            background: var(--bg-hover);
+            padding: 8px;
+            display: flex;
+            gap: 5px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .editor-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            color: var(--text);
+        }
+        
+        .editor-btn:hover {
+            background: var(--accent);
+            color: var(--bg-dark);
+        }
+        
+        .editor-content {
+            padding: 10px 15px;
+            min-height: 80px;
+            color: var(--text);
+        }
+        
+        .deck-list {
+            background: var(--bg-dark);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 2px solid var(--bg-card);
+        }
+        
+        .deck-header {
+            font-size: 18px;
+            color: var(--info);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .deck-header .count {
+            color: var(--warning);
+            font-weight: bold;
+        }
+        
+        .deck-filter {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .filter-input {
+            flex: 1;
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: var(--text);
+            font-size: 14px;
+        }
+        
+        .filter-tags {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .filter-tag {
+            background: var(--bg-hover);
+            padding: 5px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            border: 2px solid transparent;
+            color: var(--text);
+        }
+        
+        .filter-tag.active {
+            border-color: var(--accent);
+            background: var(--accent);
+            color: var(--bg-dark);
+        }
+        
+        .one-card {
+            background: var(--bg-card);
+            padding: 15px;
+            margin-bottom: 12px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            border-left: 4px solid var(--accent);
+            transition: all 0.2s;
+        }
+        
+        .one-card:hover {
+            transform: translateX(5px);
+            border-left-width: 8px;
+        }
+        
+        .card-info {
+            flex: 1;
+            margin-right: 15px;
+        }
+        
+        .card-q {
+            color: var(--warning);
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        
+        .card-a {
+            color: var(--text-dim);
+            font-size: 13px;
+            margin-bottom: 5px;
+        }
+        
+        .card-tags {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        
+        .card-tag {
+            background: var(--bg-hover);
+            color: var(--text-muted);
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: 10px;
+        }
+        
+        .card-actions {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .empty-deck {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 40px;
+            font-style: italic;
+        }
+        
+        .deleted-cards {
+            background: var(--bg-card);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 2px solid var(--danger);
+        }
+        
+        .deleted-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .deleted-title {
+            color: var(--danger);
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        /* Stats Tab */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-box {
+            background: var(--bg-card);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            border: 2px solid var(--border);
+            transform: rotate(-0.5deg);
+            transition: all 0.2s;
+        }
+        
+        .stat-box:hover {
+            transform: rotate(0deg) scale(1.05);
+        }
+        
+        .stat-box:nth-child(2) {
+            transform: rotate(0.5deg);
+        }
+        
+        .stat-box:nth-child(3) {
+            transform: rotate(-0.3deg);
+        }
+        
+        .stat-num {
+            font-size: 36px;
+            font-weight: bold;
+            color: var(--accent);
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+        }
+        
+        .stat-name {
+            font-size: 11px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            margin-top: 5px;
+        }
+        
+        .graph-box {
+            background: var(--bg-card);
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            border: 2px solid var(--border);
+        }
+        
+        .graph-title {
+            font-size: 16px;
+            color: var(--warning);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        #chart {
+            width: 100%;
+            height: 200px;
+        }
+        
+        .card-stats-box {
+            background: var(--bg-card);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border: 2px solid var(--border);
+        }
+        
+        .card-stats-title {
+            font-size: 16px;
+            color: var(--info);
+            margin-bottom: 15px;
+        }
+        
+        .weak-cards {
+            display: grid;
+            gap: 10px;
+        }
+        
+        .weak-card {
+            background: var(--bg-hover);
+            padding: 10px;
+            border-radius: 8px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
         
-        .table-title {
-            color: #e2e8f0;
-            font-size: 18px;
-            font-weight: 600;
+        .weak-info {
+            flex: 1;
         }
         
-        .table {
-            width: 100%;
-            border-collapse: collapse;
+        .weak-q {
+            font-size: 13px;
+            color: var(--text);
+            margin-bottom: 3px;
         }
         
-        .table th,
-        .table td {
-            padding: 12px 20px;
-            text-align: left;
-            border-bottom: 1px solid #718096;
+        .weak-stats {
+            font-size: 11px;
+            color: var(--text-muted);
         }
         
-        .table th {
-            background: #2d3748;
-            color: #a0aec0;
-            font-weight: 600;
+        .weak-score {
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--danger);
+        }
+        
+        .history-box {
+            background: var(--bg-card);
+            border-radius: 15px;
+            overflow: hidden;
+            border: 2px solid var(--border);
+        }
+        
+        .history-top {
+            background: var(--bg-dark);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .history-title {
+            color: var(--info);
+            font-size: 16px;
+        }
+        
+        .history-btns {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .tiny-btn {
+            padding: 5px 12px;
             font-size: 12px;
+            border-radius: 15px;
+        }
+        
+        .results-table {
+            width: 100%;
+        }
+        
+        .results-table th,
+        .results-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .results-table th {
+            background: var(--bg-dark);
+            color: var(--text-dim);
+            font-size: 11px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            font-weight: normal;
         }
         
-        .table td {
-            color: #e2e8f0;
+        .results-table td {
+            color: var(--text);
+            font-size: 14px;
         }
         
-        .table tbody tr:hover {
-            background: #2d3748;
+        .results-table tbody tr:hover {
+            background: rgba(203, 166, 247, 0.1);
+        }
+        
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+        
+        /* Share Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            animation: fadeIn 0.3s;
+        }
+        
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background: var(--bg-card);
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 500px;
+            width: 90%;
+            animation: slideIn 0.3s;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .modal-title {
+            font-size: 24px;
+            color: var(--accent);
+            margin-bottom: 20px;
+        }
+        
+        .share-link {
+            background: var(--bg-dark);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 13px;
+            color: var(--text);
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        
+        /* Keyboard shortcuts */
+        .shortcuts-hint {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--bg-card);
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-size: 12px;
+            color: var(--text-muted);
+            border: 2px solid var(--border);
+            cursor: pointer;
+        }
+        
+        .shortcuts-list {
+            display: none;
+            position: absolute;
+            bottom: 100%;
+            right: 0;
+            background: var(--bg-card);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            width: 200px;
+            border: 2px solid var(--border);
+        }
+        
+        .shortcuts-hint:hover .shortcuts-list {
+            display: block;
+        }
+        
+        .shortcut-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        
+        .shortcut-key {
+            background: var(--bg-hover);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--bg-dark);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 5px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
         }
         
         .hidden {
             display: none !important;
         }
-        
-        @media (max-width: 768px) {
-            .header {
-                flex-direction: column;
-                gap: 16px;
-            }
-            
-            .nav-tabs {
-                width: 100%;
-                justify-content: center;
-            }
-            
-            .content {
-                padding: 16px;
-            }
-            
-            .flashcard {
-                padding: 32px 20px;
-                font-size: 16px;
-            }
-            
-            .buttons {
-                flex-direction: column;
-                align-items: center;
-            }
-            
-            .btn {
-                width: 200px;
-            }
-            
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🃏 Flashcard App</h1>
-            <div class="nav-tabs">
-                <button class="nav-tab active" onclick="switchPage('study', this)">Study</button>
-                <button class="nav-tab" onclick="switchPage('create', this)">Create</button>
-                <button class="nav-tab" onclick="switchPage('results', this)">Results</button>
+    <div class="main-wrap">
+        <div class="top-bar">
+            <div class="header-row">
+                <div class="logo">📚 my flashcard thing</div>
+                <div class="header-tools">
+                    <div class="streak-badge" id="streakBadge">🔥 0 day streak</div>
+                    <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+                </div>
+            </div>
+            <div class="tabs">
+                <button class="tab-btn on" onclick="switchTab('study', this)">study</button>
+                <button class="tab-btn" onclick="switchTab('make', this)">make cards</button>
+                <button class="tab-btn" onclick="switchTab('stats', this)">my stats</button>
             </div>
         </div>
         
-        <div class="content">
-            <!-- Study Page -->
-            <div id="studyPage" class="page active">
-                <div class="file-section">
-                    <input type="file" id="jsonFile" accept=".json" style="display: none;">
-                    <label for="jsonFile" class="file-input-label">
-                        📁 Click to Select JSON File
+        <div class="main-content">
+            <!-- Study Tab -->
+            <div id="study" class="tab-page show">
+                <div class="upload-box" id="uploadBox">
+                    <input type="file" id="fileInput" accept=".json,.csv,.txt" style="display: none;" multiple>
+                    <label for="fileInput" class="upload-label">
+                        pick files to study (json/csv/txt)
                     </label>
-                    <div class="format-info">
-                        <strong>Expected formats:</strong><br>
-                        Text: [{"question": "What is 2+2?", "answer": "4"}, ...]<br>
-                        Images: [{"question": "What animal?", "answer": "dog.jpg", "type": "image"}, ...]
+                    <div class="format-note">
+                        json: [{"question": "...", "answer": "..."}]<br>
+                        csv: question,answer<br>
+                        txt: Q: ... A: ... (anki format)
+                    </div>
+                    <div class="import-buttons">
+                        <button class="btn btn-submit tiny-btn" onclick="importFromURL()">import from url</button>
+                        <button class="btn btn-warning tiny-btn" onclick="importQuizlet()">import quizlet</button>
                     </div>
                 </div>
                 
-                <div class="settings">
-                    <label>
-                        <input type="checkbox" id="scoringMode" checked>
-                        Enable Scoring Mode
-                    </label>
+                <div class="recent-decks" id="recentDecks">
+                    <div class="recent-title">recent decks:</div>
+                    <div class="recent-list" id="recentList">
+                        <!-- Recent decks will appear here -->
+                    </div>
                 </div>
                 
-                <div id="gameArea" class="game-area">
-                    <div class="score-section">
-                        <div class="score-item">
-                            <div class="score-label">Score</div>
-                            <div class="score-value"><span id="score">0</span>/<span id="total">0</span></div>
+                <div class="options">
+                    <div class="options-title">⚙️ study settings</div>
+                    <div class="options-grid">
+                        <div class="option-group">
+                            <div class="option-label">study mode</div>
+                            <div class="mode-select">
+                                <button class="mode-btn active" data-mode="classic" onclick="setMode('classic', this)">classic</button>
+                                <button class="mode-btn" data-mode="mc" onclick="setMode('mc', this)">multiple choice</button>
+                                <button class="mode-btn" data-mode="type" onclick="setMode('type', this)">type answer</button>
+                                <button class="mode-btn" data-mode="tf" onclick="setMode('tf', this)">true/false</button>
+                            </div>
                         </div>
-                        <div class="score-item">
-                            <div class="score-label">Progress</div>
-                            <div class="score-value" id="progress">0%</div>
+                        <div class="option-group">
+                            <div class="option-label">options</div>
+                            <div class="check-wrap" onclick="toggleOption('scoring')">
+                                <input type="checkbox" id="scoreCheck" checked>
+                                <label for="scoreCheck">keep score</label>
+                            </div>
+                            <div class="check-wrap" onclick="toggleOption('timer')">
+                                <input type="checkbox" id="timerCheck" checked>
+                                <label for="timerCheck">show timer</label>
+                            </div>
+                            <div class="check-wrap" onclick="toggleOption('shuffle')">
+                                <input type="checkbox" id="shuffleCheck" checked>
+                                <label for="shuffleCheck">shuffle cards</label>
+                            </div>
+                            <div class="check-wrap" onclick="toggleOption('fuzzy')">
+                                <input type="checkbox" id="fuzzyCheck" checked>
+                                <label for="fuzzyCheck">fuzzy matching</label>
+                            </div>
                         </div>
-                        <div class="score-item">
-                            <div class="score-label">Remaining</div>
-                            <div class="score-value" id="remaining">0</div>
+                        <div class="option-group">
+                            <div class="option-label">session goal</div>
+                            <input type="number" class="goal-input" id="goalScore" placeholder="target %" min="0" max="100">
+                        </div>
+                        <div class="option-group">
+                            <div class="option-label">spaced repetition</div>
+                            <div class="check-wrap" onclick="toggleOption('spaced')">
+                                <input type="checkbox" id="spacedCheck">
+                                <label for="spacedCheck">enable SR</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="studyZone" class="study-zone">
+                    <div class="session-header">
+                        <div class="session-info">
+                            <div class="session-deck" id="deckName">deck: untitled</div>
+                            <div class="session-timer" id="timer">00:00</div>
+                        </div>
+                        <button class="btn btn-nope tiny-btn" onclick="pauseSession()">pause</button>
+                    </div>
+                    
+                    <div class="scoreboard">
+                        <div class="score-bit">
+                            <div class="score-tiny">points</div>
+                            <div class="score-big"><span id="pts">0</span>/<span id="tot">0</span></div>
+                        </div>
+                        <div class="score-bit">
+                            <div class="score-tiny">correct</div>
+                            <div class="score-big" id="correct">0</div>
+                        </div>
+                        <div class="score-bit">
+                            <div class="score-tiny">wrong</div>
+                            <div class="score-big" id="wrong">0</div>
+                        </div>
+                        <div class="score-bit">
+                            <div class="score-tiny">skipped</div>
+                            <div class="score-big" id="skipped">0</div>
+                        </div>
+                        <div class="score-bit">
+                            <div class="score-tiny">left</div>
+                            <div class="score-big" id="left">0</div>
                         </div>
                     </div>
                     
-                    <div class="flashcard" id="flashcard" onclick="handleCardClick()">
-                        <div class="answer-content" id="cardContent">
-                            <!-- Question/Answer content -->
-                        </div>
-                        <div class="click-hint" id="clickHint">Click to reveal answer</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressBar" style="width: 0%"></div>
                     </div>
                     
-                    <div class="answer-section">
-                        <div id="textInputSection" class="text-input-section hidden">
-                            <input type="text" id="answerInput" class="answer-input" placeholder="Enter your answer...">
-                            <button class="btn btn-primary" onclick="checkAnswer()">Submit</button>
+                    <div class="feedback-msg" id="feedback"></div>
+                    
+                    <div class="the-card" id="card" onclick="flipCard()">
+                        <div class="difficulty-indicator" id="diffIndicator">
+                            <div class="diff-dot easy"></div>
+                            <div class="diff-dot medium"></div>
+                            <div class="diff-dot hard"></div>
+                        </div>
+                        <div class="card-text" id="cardText"></div>
+                        <div class="flip-tip" id="flipHint">space or click to flip</div>
+                    </div>
+                    
+                    <div class="action-zone">
+                        <div id="typeArea" class="type-row hidden">
+                            <input type="text" id="userAnswer" class="type-box" 
+                                   placeholder="type answer here..." autocomplete="off">
+                            <button class="btn btn-submit" onclick="checkTyped()">check (enter)</button>
                         </div>
                         
-                        <div class="buttons">
-                            <div id="scoringButtons" class="hidden">
-                                <button class="btn btn-success" onclick="markCorrect()">✅ Correct</button>
-                                <button class="btn btn-danger" onclick="markIncorrect()">❌ Wrong</button>
+                        <div id="mcArea" class="mc-options hidden">
+                            <!-- Multiple choice options will appear here -->
+                        </div>
+                        
+                        <div class="btns">
+                            <div id="scoreArea" class="btns hidden">
+                                <button class="btn btn-go" onclick="gotIt()">got it! (1)</button>
+                                <button class="btn btn-nope" onclick="missedIt()">nope (2)</button>
                             </div>
-                            <button class="btn btn-secondary" onclick="nextCard()">Next Card</button>
+                            <button class="btn btn-next" onclick="skipCard()">skip (3)</button>
+                        </div>
+                        
+                        <div class="diff-buttons hidden" id="diffButtons">
+                            <button class="btn diff-btn btn-go" onclick="setDifficulty('easy')">easy (q)</button>
+                            <button class="btn diff-btn btn-warning" onclick="setDifficulty('medium')">medium (w)</button>
+                            <button class="btn diff-btn btn-nope" onclick="setDifficulty('hard')">hard (e)</button>
                         </div>
                     </div>
                     
-                    <div id="completion" class="completion">
-                        <h2>🎉 Completed!</h2>
-                        <p>You've finished all flashcards!</p>
-                        <p>Final Score: <span id="finalScore"></span></p>
-                        <br>
-                        <button class="btn btn-primary" onclick="restartGame()">Start Over</button>
+                    <div id="doneBox" class="done-box">
+                        <h2>🎉 all done!</h2>
+                        <div class="final-score" id="finalNum"></div>
+                        <div class="goal-status" id="goalStatus"></div>
+                        <p>nice job!</p>
+                        <button class="btn btn-go" onclick="goAgain()">go again?</button>
+                        <button class="btn btn-submit" onclick="reviewMissed()">review missed</button>
                     </div>
                 </div>
             </div>
 
-            <!-- Create Page -->
-            <div id="createPage" class="page">
-                <div class="create-form">
-                    <h2 style="color: #e2e8f0; margin-bottom: 20px;">Create New Flashcard</h2>
+            <!-- Make Tab -->
+            <div id="make" class="tab-page">
+                <div class="make-card">
+                    <h2 class="make-title">✏️ make a new card</h2>
                     
-                    <div class="form-group">
-                        <label class="form-label">Question:</label>
-                        <textarea id="questionInput" class="form-textarea" placeholder="Enter your question here..."></textarea>
+                    <div class="field">
+                        <label>question:</label>
+                        <div class="rich-editor">
+                            <div class="editor-toolbar">
+                                <button class="editor-btn" onclick="formatText('bold')"><strong>B</strong></button>
+                                <button class="editor-btn" onclick="formatText('italic')"><em>I</em></button>
+                                <button class="editor-btn" onclick="formatText('code')">code</button>
+                            </div>
+                            <div class="editor-content" contenteditable="true" id="qText"></div>
+                        </div>
                     </div>
                     
-                    <div class="form-group">
-                        <label class="form-label">Answer Type:</label>
-                        <select id="answerType" class="form-select" onchange="toggleAnswerType()">
-                            <option value="text">Text Answer</option>
-                            <option value="image">Image Answer</option>
+                    <div class="field">
+                        <label>answer type:</label>
+                        <select id="aType" onchange="switchType()">
+                            <option value="text">text</option>
+                            <option value="image">picture</option>
+                            <option value="audio">audio</option>
                         </select>
                     </div>
                     
-                    <div class="form-group" id="textAnswerGroup">
-                        <label class="form-label">Answer:</label>
-                        <textarea id="answerInput" class="form-textarea" placeholder="Enter your answer here..."></textarea>
+                    <div class="field" id="textAns">
+                        <label>answer:</label>
+                        <div class="rich-editor">
+                            <div class="editor-toolbar">
+                                <button class="editor-btn" onclick="formatText('bold')"><strong>B</strong></button>
+                                <button class="editor-btn" onclick="formatText('italic')"><em>I</em></button>
+                                <button class="editor-btn" onclick="formatText('code')">code</button>
+                            </div>
+                            <div class="editor-content" contenteditable="true" id="aText"></div>
+                        </div>
                     </div>
                     
-                    <div class="form-group hidden" id="imageAnswerGroup">
-                        <label class="form-label">Image URL:</label>
-                        <input type="text" id="imageUrlInput" class="form-input" placeholder="Enter image URL or path...">
+                    <div class="field hidden" id="imgAns">
+                        <label>image url:</label>
+                        <input type="text" id="imgUrl" placeholder="paste image link here">
                     </div>
                     
-                    <div class="buttons">
-                        <button class="btn btn-primary" onclick="addFlashcard()">Add Flashcard</button>
-                        <button class="btn btn-secondary" onclick="clearForm()">Clear</button>
+                    <div class="field hidden" id="audioAns">
+                        <label>audio url:</label>
+                        <input type="text" id="audioUrl" placeholder="paste audio link here">
+                    </div>
+                    
+                    <div class="field">
+                        <label>tags (comma separated):</label>
+                        <div class="tag-input-wrapper">
+                            <input type="text" id="tagInput" placeholder="math, algebra, chapter-1">
+                        </div>
+                        <div class="tag-list" id="tagList"></div>
+                    </div>
+                    
+                    <div class="btns">
+                        <button class="btn btn-go" onclick="addCard()">add it!</button>
+                        <button class="btn btn-next" onclick="clearFields()">clear</button>
                     </div>
                 </div>
                 
-                <div class="flashcards-list" id="flashcardsList">
-                    <h3 style="color: #e2e8f0; margin-bottom: 16px;">Created Flashcards (<span id="cardCount">0</span>)</h3>
-                    <div id="cardsContainer">
-                        <p style="color: #a0aec0; text-align: center;">No flashcards created yet.</p>
+                <div class="deleted-cards hidden" id="deletedCards">
+                    <div class="deleted-header">
+                        <div class="deleted-title">🗑️ recently deleted</div>
+                        <button class="btn btn-go tiny-btn" onclick="restoreAll()">restore all</button>
+                    </div>
+                    <div id="deletedList"></div>
+                </div>
+                
+                <div class="deck-list">
+                    <div class="deck-header">
+                        your deck: <span class="count" id="deckSize">0 cards</span>
+                    </div>
+                    <div class="deck-filter">
+                        <input type="text" class="filter-input" id="filterInput" 
+                               placeholder="search cards..." oninput="filterCards()">
+                        <div class="filter-tags" id="filterTags">
+                            <!-- Tag filters will appear here -->
+                        </div>
+                    </div>
+                    <div id="deckCards">
+                        <div class="empty-deck">
+                            nothing here yet... add some cards!
+                        </div>
                     </div>
                 </div>
                 
-                <div class="buttons">
-                    <button class="btn btn-success" onclick="exportFlashcards()">📥 Export JSON</button>
-                    <button class="btn btn-danger" onclick="clearAllCards()">🗑️ Clear All</button>
+                <div class="btns">
+                    <button class="btn btn-submit" onclick="saveDeck()">save deck 💾</button>
+                    <button class="btn btn-warning" onclick="shareDeck()">share deck 🔗</button>
+                    <button class="btn btn-nope" onclick="nukeDeck()">delete all 🗑️</button>
                 </div>
             </div>
 
-            <!-- Results Page -->
-            <div id="resultsPage" class="page">
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-value" id="totalSessions">0</div>
-                        <div class="stat-label">Total Sessions</div>
+            <!-- Stats Tab -->
+            <div id="stats" class="tab-page">
+                <div class="stats-row">
+                    <div class="stat-box">
+                        <div class="stat-num" id="sessions">0</div>
+                        <div class="stat-name">sessions</div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="totalQuestions">0</div>
-                        <div class="stat-label">Questions Answered</div>
+                    <div class="stat-box">
+                        <div class="stat-num" id="questions">0</div>
+                        <div class="stat-name">questions</div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="averageScore">0%</div>
-                        <div class="stat-label">Average Score</div>
+                    <div class="stat-box">
+                        <div class="stat-num" id="avgScore">0%</div>
+                        <div class="stat-name">average</div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="bestScore">0%</div>
-                        <div class="stat-label">Best Score</div>
+                    <div class="stat-box">
+                        <div class="stat-num" id="best">0%</div>
+                        <div class="stat-name">best</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-num" id="streakStat">0</div>
+                        <div class="stat-name">streak</div>
                     </div>
                 </div>
                 
-                <div class="chart-container">
-                    <div class="chart-title">Score Progress Over Time</div>
-                    <canvas id="scoreChart" width="800" height="300"></canvas>
+                <div class="graph-box">
+                    <div class="graph-title">📈 how you're doing</div>
+                    <canvas id="chart"></canvas>
                 </div>
                 
-                <div class="results-table">
-                    <div class="table-header">
-                        <div class="table-title">Session History</div>
-                        <div style="display: flex; gap: 8px;">
-                            <input type="file" id="csvFile" accept=".csv" style="display: none;" onchange="importResults()">
-                            <button class="btn btn-primary btn-small" onclick="document.getElementById('csvFile').click()">📁 Import CSV</button>
-                            <button class="btn btn-success btn-small" onclick="exportResults()">💾 Export CSV</button>
-                            <button class="btn btn-danger btn-small" onclick="clearAllResults()">Clear All</button>
+                <div class="card-stats-box">
+                    <div class="card-stats-title">🎯 cards you struggle with</div>
+                    <div class="weak-cards" id="weakCards">
+                        <div class="no-data">no data yet</div>
+                    </div>
+                </div>
+                
+                <div class="history-box">
+                    <div class="history-top">
+                        <div class="history-title">past sessions</div>
+                        <div class="history-btns">
+                            <input type="file" id="csvIn" accept=".csv" style="display: none;" onchange="loadCSV()">
+                            <button class="btn tiny-btn btn-next" onclick="document.getElementById('csvIn').click()">import</button>
+                            <button class="btn tiny-btn btn-submit" onclick="saveCSV()">export csv</button>
+                            <button class="btn tiny-btn btn-warning" onclick="exportDetailed()">detailed export</button>
+                            <button class="btn tiny-btn btn-nope" onclick="wipeHistory()">clear</button>
                         </div>
                     </div>
-                    <div style="overflow-x: auto;">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Score</th>
-                                    <th>Questions</th>
-                                    <th>Percentage</th>
-                                    <th>Duration</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="resultsTableBody">
-                                <tr>
-                                    <td colspan="6" style="text-align: center; color: #a0aec0;">No results yet. Complete a study session to see data.</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th>when</th>
+                                <th>deck</th>
+                                <th>score</th>
+                                <th>cards</th>
+                                <th>%</th>
+                                <th>time</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyRows">
+                            <tr>
+                                <td colspan="7" class="no-data">
+                                    no sessions yet... go study!
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Share Modal -->
+    <div class="modal" id="shareModal">
+        <div class="modal-content">
+            <h2 class="modal-title">📤 share your deck</h2>
+            <p>copy this link to share:</p>
+            <div class="share-link" id="shareLink"></div>
+            <div class="modal-buttons">
+                <button class="btn btn-submit" onclick="copyShareLink()">copy link</button>
+                <button class="btn btn-next" onclick="closeModal()">close</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Keyboard Shortcuts -->
+    <div class="shortcuts-hint">
+        ⌨️ shortcuts
+        <div class="shortcuts-list">
+            <div class="shortcut-item">
+                <span>flip card</span>
+                <span class="shortcut-key">space</span>
+            </div>
+            <div class="shortcut-item">
+                <span>correct</span>
+                <span class="shortcut-key">1</span>
+            </div>
+            <div class="shortcut-item">
+                <span>wrong</span>
+                <span class="shortcut-key">2</span>
+            </div>
+            <div class="shortcut-item">
+                <span>skip</span>
+                <span class="shortcut-key">3</span>
+            </div>
+            <div class="shortcut-item">
+                <span>easy</span>
+                <span class="shortcut-key">q</span>
+            </div>
+            <div class="shortcut-item">
+                <span>medium</span>
+                <span class="shortcut-key">w</span>
+            </div>
+            <div class="shortcut-item">
+                <span>hard</span>
+                <span class="shortcut-key">e</span>
+            </div>
+            <div class="shortcut-item">
+                <span>pause</span>
+                <span class="shortcut-key">p</span>
             </div>
         </div>
     </div>
 
     <script>
-        // Game State
-        let flashcards = [];
-        let currentCard = null;
-        let remainingCards = [];
-        let score = 0;
-        let totalCards = 0;
-        let showingAnswer = false;
-        let scoringMode = true;
-        let hasAnswered = false;
-        let sessionStartTime = null;
+        // App State
+        const state = {
+            // Study state
+            cards: [],
+            currentCard: null,
+            currentDeck: null,
+            pile: [],
+            missedCards: [],
+            score: 0,
+            correctCount: 0,
+            wrongCount: 0,
+            skippedCount: 0,
+            total: 0,
+            flipped: false,
+            answered: false,
+            startTime: null,
+            timerInterval: null,
+            pausedTime: 0,
+            mode: 'classic',
+            
+            // Options
+            scoring: true,
+            timer: true,
+            shuffle: true,
+            fuzzy: true,
+            spaced: false,
+            goalScore: null,
+            
+            // Create state
+            myDeck: [],
+            deletedCards: [],
+            currentTags: [],
+            filterTag: '',
+            
+            // Stats state
+            history: JSON.parse(localStorage.getItem('cardHistory') || '[]'),
+            cardStats: JSON.parse(localStorage.getItem('cardStats') || '{}'),
+            streak: 0,
+            lastStudyDate: null,
+            
+            // Session recovery
+            sessionBackup: null,
+            
+            // Recent decks
+            recentDecks: JSON.parse(localStorage.getItem('recentDecks') || '[]')
+        };
         
-        // Create State
-        let createdFlashcards = [];
+        // Initialize
+        function init() {
+            loadTheme();
+            updateStreak();
+            showRecentDecks();
+            showDeck();
+            setupDragDrop();
+            setupKeyboardShortcuts();
+            checkSessionRecovery();
+            
+            // Auto-save deck every 30 seconds
+            setInterval(autoSaveDeck, 30000);
+        }
         
-        // Results State
-        let results = JSON.parse(localStorage.getItem('flashcardResults') || '[]');
-
-        // Page Management
-        function switchPage(pageName, targetElement) {
-            // Hide all pages
-            document.querySelectorAll('.page').forEach(page => {
-                page.classList.remove('active');
-            });
+        // Theme Management
+        function loadTheme() {
+            const theme = localStorage.getItem('theme') || 'dark';
+            document.body.setAttribute('data-theme', theme);
+            document.querySelector('.theme-toggle').textContent = theme === 'dark' ? '🌙' : '☀️';
+        }
+        
+        function toggleTheme() {
+            const current = document.body.getAttribute('data-theme') || 'dark';
+            const newTheme = current === 'dark' ? 'light' : 'dark';
+            document.body.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            document.querySelector('.theme-toggle').textContent = newTheme === 'dark' ? '🌙' : '☀️';
+        }
+        
+        // Streak Management
+        function updateStreak() {
+            const today = new Date().toDateString();
+            const lastDate = localStorage.getItem('lastStudyDate');
+            const savedStreak = parseInt(localStorage.getItem('streak') || '0');
             
-            // Remove active class from all tabs
-            document.querySelectorAll('.nav-tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
+            if (lastDate === today) {
+                state.streak = savedStreak;
+            } else if (lastDate) {
+                const last = new Date(lastDate);
+                const diff = Math.floor((new Date() - last) / (1000 * 60 * 60 * 24));
+                state.streak = diff === 1 ? savedStreak : 0;
+            } else {
+                state.streak = 0;
+            }
             
-            // Show selected page
-            document.getElementById(pageName + 'Page').classList.add('active');
-            targetElement.classList.add('active');
+            document.getElementById('streakBadge').textContent = `🔥 ${state.streak} day streak`;
+        }
+        
+        function incrementStreak() {
+            const today = new Date().toDateString();
+            const lastDate = localStorage.getItem('lastStudyDate');
             
-            // Load page-specific data
-            if (pageName === 'results') {
-                loadResultsPage();
+            if (lastDate !== today) {
+                state.streak++;
+                localStorage.setItem('streak', state.streak);
+                localStorage.setItem('lastStudyDate', today);
+                document.getElementById('streakBadge').textContent = `🔥 ${state.streak} day streak`;
             }
         }
-
-        // Study Page Functions
-        document.getElementById('jsonFile').addEventListener('change', function(event) {
-            const file = event.target.files[0];
-            if (file) {
+        
+        // Tab Management
+        function switchTab(tab, btn) {
+            document.querySelectorAll('.tab-page').forEach(p => p.classList.remove('show'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('on'));
+            
+            document.getElementById(tab).classList.add('show');
+            btn.classList.add('on');
+            
+            if (tab === 'stats') {
+                showStats();
+            }
+        }
+        
+        // File Handling
+        function setupDragDrop() {
+            const box = document.getElementById('uploadBox');
+            
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                box.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                box.addEventListener(eventName, () => box.classList.add('drag-over'), false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                box.addEventListener(eventName, () => box.classList.remove('drag-over'), false);
+            });
+            
+            box.addEventListener('drop', handleDrop, false);
+        }
+        
+        function handleDrop(e) {
+            const files = e.dataTransfer.files;
+            handleFiles(files);
+        }
+        
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            handleFiles(e.target.files);
+        });
+        
+        function handleFiles(files) {
+            Array.from(files).forEach(file => {
+                const ext = file.name.split('.').pop().toLowerCase();
                 const reader = new FileReader();
+                
                 reader.onload = function(e) {
                     try {
-                        const data = JSON.parse(e.target.result);
-                        if (Array.isArray(data) && data.length > 0 && data[0].question && data[0].answer) {
-                            flashcards = data;
-                            scoringMode = document.getElementById('scoringMode').checked;
-                            initializeGame();
-                        } else {
-                            alert('Invalid JSON format. Please include question and answer fields.');
+                        let cards = [];
+                        const content = e.target.result;
+                        
+                        if (ext === 'json') {
+                            cards = JSON.parse(content);
+                        } else if (ext === 'csv') {
+                            cards = parseCSV(content);
+                        } else if (ext === 'txt') {
+                            cards = parseAnki(content);
                         }
-                    } catch (error) {
-                        alert('Error parsing JSON file: ' + error.message);
+                        
+                        if (validateCards(cards)) {
+                            state.cards = cards;
+                            state.currentDeck = file.name.replace(/\.[^/.]+$/, "");
+                            addToRecentDecks(state.currentDeck, cards);
+                            startStudy();
+                        } else {
+                            alert('Invalid file format!');
+                        }
+                    } catch (err) {
+                        alert('Error reading file: ' + err.message);
                     }
                 };
+                
                 reader.readAsText(file);
-            }
-        });
-
-        function initializeGame() {
-            remainingCards = [...flashcards];
-            shuffleArray(remainingCards);
-            score = 0;
-            totalCards = flashcards.length;
-            sessionStartTime = Date.now();
-            
-            document.getElementById('gameArea').style.display = 'block';
-            document.getElementById('completion').style.display = 'none';
-            
-            showNextCard();
+            });
         }
-
-        function shuffleArray(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
+        
+        function parseCSV(content) {
+            const lines = content.split('\n').filter(l => l.trim());
+            const cards = [];
+            
+            for (let line of lines) {
+                const [question, answer, ...tags] = line.split(',').map(s => s.trim());
+                if (question && answer) {
+                    cards.push({
+                        question,
+                        answer,
+                        tags: tags.filter(t => t)
+                    });
+                }
+            }
+            
+            return cards;
+        }
+        
+        function parseAnki(content) {
+            const cards = [];
+            const lines = content.split('\n');
+            let current = {};
+            
+            for (let line of lines) {
+                line = line.trim();
+                if (line.startsWith('Q:')) {
+                    if (current.question) {
+                        cards.push(current);
+                    }
+                    current = { question: line.substring(2).trim() };
+                } else if (line.startsWith('A:')) {
+                    current.answer = line.substring(2).trim();
+                }
+            }
+            
+            if (current.question && current.answer) {
+                cards.push(current);
+            }
+            
+            return cards;
+        }
+        
+        function validateCards(cards) {
+            if (!Array.isArray(cards) || cards.length === 0) return false;
+            if (cards.length > 1000) {
+                return confirm(`This deck has ${cards.length} cards. Loading this many cards might slow down your browser. Continue?`);
+            }
+            return cards.every(c => c.question && c.answer);
+        }
+        
+        function importFromURL() {
+            const url = prompt('Enter deck URL:');
+            if (url) {
+                fetch(url)
+                    .then(res => res.json())
+                    .then(cards => {
+                        if (validateCards(cards)) {
+                            state.cards = cards;
+                            state.currentDeck = 'imported deck';
+                            startStudy();
+                        }
+                    })
+                    .catch(err => alert('Failed to import: ' + err.message));
             }
         }
-
-        function showNextCard() {
-            if (remainingCards.length === 0) {
-                showCompletion();
+        
+        function importQuizlet() {
+            alert('Paste Quizlet export text in the text file format and upload it!');
+        }
+        
+        // Recent Decks
+        function addToRecentDecks(name, cards) {
+            const deck = {
+                name,
+                cards,
+                date: new Date().toISOString()
+            };
+            
+            state.recentDecks = state.recentDecks.filter(d => d.name !== name);
+            state.recentDecks.unshift(deck);
+            state.recentDecks = state.recentDecks.slice(0, 5);
+            
+            localStorage.setItem('recentDecks', JSON.stringify(state.recentDecks));
+            showRecentDecks();
+        }
+        
+        function showRecentDecks() {
+            const list = document.getElementById('recentList');
+            if (state.recentDecks.length === 0) {
+                list.innerHTML = '<span style="color: var(--text-muted)">no recent decks</span>';
                 return;
             }
             
-            currentCard = remainingCards.pop();
-            showingAnswer = false;
-            hasAnswered = false;
-            
-            const flashcard = document.getElementById('flashcard');
-            const cardContent = document.getElementById('cardContent');
-            const clickHint = document.getElementById('clickHint');
-            
-            flashcard.classList.remove('showing-answer');
-            cardContent.innerHTML = currentCard.question;
-            clickHint.style.display = 'block';
-            clickHint.textContent = 'Click to reveal answer';
-            
-            document.getElementById('textInputSection').classList.add('hidden');
-            document.getElementById('scoringButtons').classList.add('hidden');
-            document.getElementById('answerInput').value = '';
-            
-            updateScore();
+            list.innerHTML = state.recentDecks.map((deck, i) => `
+                <div class="recent-deck" onclick="loadRecentDeck(${i})">
+                    ${deck.name} (${deck.cards.length})
+                </div>
+            `).join('');
         }
-
-        function handleCardClick() {
-            if (!currentCard) return;
+        
+        function loadRecentDeck(index) {
+            const deck = state.recentDecks[index];
+            state.cards = deck.cards;
+            state.currentDeck = deck.name;
+            startStudy();
+        }
+        
+        // Study Options
+        function setMode(mode, btn) {
+            state.mode = mode;
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+        
+        function toggleOption(option) {
+            const checkMap = {
+                'scoring': 'scoreCheck',
+                'timer': 'timerCheck',
+                'shuffle': 'shuffleCheck',
+                'fuzzy': 'fuzzyCheck',
+                'spaced': 'spacedCheck'
+            };
             
-            if (!showingAnswer) {
-                showAnswer();
+            const check = document.getElementById(checkMap[option]);
+            check.checked = !check.checked;
+            state[option] = check.checked;
+        }
+        
+        // Study Session
+        function startStudy() {
+            if (state.cards.length === 0) return;
+            
+            // Backup session for recovery
+            backupSession();
+            
+            // Reset stats
+            state.pile = [...state.cards];
+            state.missedCards = [];
+            state.score = 0;
+            state.correctCount = 0;
+            state.wrongCount = 0;
+            state.skippedCount = 0;
+            state.total = state.cards.length;
+            state.goalScore = parseInt(document.getElementById('goalScore').value) || null;
+            
+            // Apply spaced repetition if enabled
+            if (state.spaced) {
+                applySpacedRepetition();
+            }
+            
+            // Shuffle if enabled
+            if (state.shuffle) {
+                shuffle(state.pile);
+            }
+            
+            // Start timer
+            state.startTime = Date.now();
+            state.pausedTime = 0;
+            if (state.timer) {
+                startTimer();
+            }
+            
+            // Show UI
+            document.getElementById('studyZone').style.display = 'block';
+            document.getElementById('doneBox').style.display = 'none';
+            document.getElementById('deckName').textContent = `deck: ${state.currentDeck || 'untitled'}`;
+            
+            nextCard();
+        }
+        
+        function applySpacedRepetition() {
+            // Sort cards by difficulty/last seen
+            state.pile.sort((a, b) => {
+                const aStats = state.cardStats[hashCard(a)] || {};
+                const bStats = state.cardStats[hashCard(b)] || {};
+                
+                const aDiff = aStats.difficulty || 1;
+                const bDiff = bStats.difficulty || 1;
+                const aLast = aStats.lastSeen || 0;
+                const bLast = bStats.lastSeen || 0;
+                
+                // Prioritize harder cards and cards not seen recently
+                return (bDiff - aDiff) || (aLast - bLast);
+            });
+        }
+        
+        function hashCard(card) {
+            return btoa(card.question + card.answer).substring(0, 10);
+        }
+        
+        function shuffle(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
             }
         }
-
-        function showAnswer() {
-            if (!currentCard || showingAnswer) return;
+        
+        function nextCard() {
+            if (state.pile.length === 0) {
+                finish();
+                return;
+            }
             
-            showingAnswer = true;
-            const flashcard = document.getElementById('flashcard');
-            const cardContent = document.getElementById('cardContent');
-            const clickHint = document.getElementById('clickHint');
+            state.currentCard = state.pile.pop();
+            state.flipped = false;
+            state.answered = false;
             
-            flashcard.classList.add('showing-answer');
-            clickHint.style.display = 'none';
+            const card = document.getElementById('card');
+            const text = document.getElementById('cardText');
+            const hint = document.getElementById('flipHint');
             
-            if (currentCard.type === 'image') {
-                cardContent.innerHTML = `<img src="${currentCard.answer}" alt="Answer" class="answer-image" />`;
-                if (scoringMode) {
-                    document.getElementById('scoringButtons').classList.remove('hidden');
+            card.classList.remove('flipped');
+            text.innerHTML = processRichText(state.currentCard.question);
+            hint.style.display = 'block';
+            
+            // Show difficulty indicator
+            showDifficulty();
+            
+            // Hide all inputs
+            document.getElementById('typeArea').classList.add('hidden');
+            document.getElementById('mcArea').classList.add('hidden');
+            document.getElementById('scoreArea').classList.add('hidden');
+            document.getElementById('diffButtons').classList.add('hidden');
+            document.getElementById('userAnswer').value = '';
+            document.getElementById('feedback').style.display = 'none';
+            
+            // Setup mode-specific UI
+            if (state.mode === 'mc' || state.mode === 'tf') {
+                setupMultipleChoice();
+            }
+            
+            updateStats();
+        }
+        
+        function showDifficulty() {
+            const stats = state.cardStats[hashCard(state.currentCard)] || {};
+            const diff = stats.difficulty || 0;
+            const indicators = document.querySelectorAll('.diff-dot');
+            
+            indicators.forEach((dot, i) => {
+                dot.classList.remove('active');
+                if (diff === 1 && dot.classList.contains('easy')) dot.classList.add('active');
+                if (diff === 2 && dot.classList.contains('medium')) dot.classList.add('active');
+                if (diff === 3 && dot.classList.contains('hard')) dot.classList.add('active');
+            });
+        }
+        
+        function setupMultipleChoice() {
+            const mcArea = document.getElementById('mcArea');
+            const correct = state.currentCard.answer;
+            let options = [correct];
+            
+            if (state.mode === 'tf') {
+                options = ['True', 'False'];
+            } else {
+                // Get random wrong answers
+                const others = state.cards
+                    .filter(c => c.answer !== correct)
+                    .map(c => c.answer)
+                    .sort(() => Math.random() - 0.5)
+                    .slice(0, 3);
+                
+                options = [...options, ...others];
+                shuffle(options);
+            }
+            
+            mcArea.innerHTML = options.map((opt, i) => `
+                <div class="mc-option" onclick="selectMC(${i}, '${opt.replace(/'/g, "\\'")}')">${opt}</div>
+            `).join('');
+        }
+        
+        function selectMC(index, answer) {
+            if (state.answered) return;
+            
+            const options = document.querySelectorAll('.mc-option');
+            options.forEach(o => o.classList.remove('selected'));
+            options[index].classList.add('selected');
+            
+            checkAnswer(answer);
+        }
+        
+        function flipCard() {
+            if (!state.currentCard || state.flipped) return;
+            
+            state.flipped = true;
+            const card = document.getElementById('card');
+            const text = document.getElementById('cardText');
+            const hint = document.getElementById('flipHint');
+            
+            card.classList.add('flipped');
+            hint.style.display = 'none';
+            
+            // Show answer based on type
+            if (state.currentCard.type === 'image') {
+                text.innerHTML = `<img src="${state.currentCard.answer}" alt="answer" class="card-img" 
+                                  onerror="this.src='https://via.placeholder.com/300x200?text=Image+Failed'">`;
+            } else if (state.currentCard.type === 'audio') {
+                text.innerHTML = `<audio controls class="card-audio">
+                                    <source src="${state.currentCard.answer}" type="audio/mpeg">
+                                    Your browser doesn't support audio.
+                                  </audio>`;
+            } else {
+                text.innerHTML = processRichText(state.currentCard.answer);
+            }
+            
+            // Show appropriate controls
+            if (state.mode === 'classic' && state.scoring) {
+                document.getElementById('scoreArea').classList.remove('hidden');
+            } else if (state.mode === 'type') {
+                document.getElementById('typeArea').classList.remove('hidden');
+                document.getElementById('userAnswer').focus();
+            } else if (state.mode === 'mc' || state.mode === 'tf') {
+                document.getElementById('mcArea').classList.remove('hidden');
+            }
+            
+            if (state.spaced) {
+                document.getElementById('diffButtons').classList.remove('hidden');
+            }
+        }
+        
+        function processRichText(text) {
+            if (!text) return '';
+            
+            // Convert markdown-like syntax
+            text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            text = text.replace(/`(.*?)`/g, '<code>$1</code>');
+            
+            return text;
+        }
+        
+        function checkTyped() {
+            const userAnswer = document.getElementById('userAnswer').value.trim();
+            checkAnswer(userAnswer);
+        }
+        
+        function checkAnswer(userAnswer) {
+            if (!state.currentCard || state.answered) return;
+            
+            state.answered = true;
+            const correct = state.currentCard.answer.toLowerCase();
+            const user = userAnswer.toLowerCase();
+            
+            let isCorrect = false;
+            let isPartial = false;
+            
+            if (state.fuzzy) {
+                // Fuzzy matching
+                const distance = levenshteinDistance(user, correct);
+                const threshold = Math.max(3, correct.length * 0.2);
+                
+                if (distance === 0) {
+                    isCorrect = true;
+                } else if (distance <= threshold) {
+                    isPartial = true;
+                } else {
+                    // Check for common variations
+                    const userClean = user.replace(/[^a-z0-9]/g, '');
+                    const correctClean = correct.replace(/[^a-z0-9]/g, '');
+                    if (userClean === correctClean) {
+                        isCorrect = true;
+                    }
                 }
             } else {
-                cardContent.textContent = currentCard.answer;
-                if (scoringMode) {
-                    document.getElementById('scoringButtons').classList.remove('hidden');
-                } else {
-                    document.getElementById('textInputSection').classList.remove('hidden');
+                isCorrect = user === correct;
+            }
+            
+            // Update scores
+            if (isCorrect) {
+                state.score++;
+                state.correctCount++;
+                showFeedback('correct', '✓ Correct!');
+                updateCardStats(state.currentCard, true);
+            } else if (isPartial) {
+                state.score += 0.5;
+                state.correctCount++;
+                showFeedback('partial', '~ Almost! Minor typo detected');
+                updateCardStats(state.currentCard, true);
+            } else {
+                state.wrongCount++;
+                state.missedCards.push(state.currentCard);
+                showFeedback('wrong', `✗ Wrong! Answer: ${state.currentCard.answer}`);
+                updateCardStats(state.currentCard, false);
+            }
+            
+            // Update MC UI
+            if (state.mode === 'mc' || state.mode === 'tf') {
+                const options = document.querySelectorAll('.mc-option');
+                options.forEach(opt => {
+                    if (opt.textContent === state.currentCard.answer) {
+                        opt.classList.add('correct');
+                    } else if (opt.classList.contains('selected')) {
+                        opt.classList.add('wrong');
+                    }
+                });
+            }
+            
+            updateStats();
+            setTimeout(nextCard, isCorrect ? 1000 : 2000);
+        }
+        
+        function levenshteinDistance(a, b) {
+            const matrix = [];
+            
+            for (let i = 0; i <= b.length; i++) {
+                matrix[i] = [i];
+            }
+            
+            for (let j = 0; j <= a.length; j++) {
+                matrix[0][j] = j;
+            }
+            
+            for (let i = 1; i <= b.length; i++) {
+                for (let j = 1; j <= a.length; j++) {
+                    if (b.charAt(i - 1) === a.charAt(j - 1)) {
+                        matrix[i][j] = matrix[i - 1][j - 1];
+                    } else {
+                        matrix[i][j] = Math.min(
+                            matrix[i - 1][j - 1] + 1,
+                            matrix[i][j - 1] + 1,
+                            matrix[i - 1][j] + 1
+                        );
+                    }
                 }
             }
+            
+            return matrix[b.length][a.length];
         }
-
-        function checkAnswer() {
-            if (!currentCard || !scoringMode || hasAnswered) return;
+        
+        function showFeedback(type, message) {
+            const feedback = document.getElementById('feedback');
+            feedback.className = `feedback-msg ${type}`;
+            feedback.textContent = message;
+            feedback.style.display = 'block';
+        }
+        
+        function gotIt() {
+            if (!state.scoring || state.answered) return;
+            state.answered = true;
+            state.score++;
+            state.correctCount++;
+            updateCardStats(state.currentCard, true);
+            updateStats();
+            setTimeout(nextCard, 200);
+        }
+        
+        function missedIt() {
+            if (!state.scoring || state.answered) return;
+            state.answered = true;
+            state.wrongCount++;
+            state.missedCards.push(state.currentCard);
+            updateCardStats(state.currentCard, false);
+            updateStats();
+            setTimeout(nextCard, 200);
+        }
+        
+        function skipCard() {
+            state.skippedCount++;
+            updateStats();
+            nextCard();
+        }
+        
+        function setDifficulty(level) {
+            if (!state.currentCard) return;
             
-            hasAnswered = true;
-            const userAnswer = document.getElementById('answerInput').value.trim().toLowerCase();
-            const correctAnswer = currentCard.answer.toLowerCase();
-            
-            if (userAnswer === correctAnswer) {
-                score++;
+            const hash = hashCard(state.currentCard);
+            if (!state.cardStats[hash]) {
+                state.cardStats[hash] = {};
             }
             
-            updateScore();
-            setTimeout(nextCard, 1000);
-        }
-
-        function markCorrect() {
-            if (!scoringMode || hasAnswered) return;
-            hasAnswered = true;
-            score++;
-            updateScore();
-            setTimeout(nextCard, 300); // Instantly move to next card
-        }
-
-        function markIncorrect() {
-            if (!scoringMode || hasAnswered) return;
-            hasAnswered = true;
-            setTimeout(nextCard, 300); // Instantly move to next card
-        }
-
-        function nextCard() {
-            showNextCard();
-        }
-
-        function updateScore() {
-            const completed = totalCards - remainingCards.length;
-            const progress = totalCards > 0 ? Math.round((completed / totalCards) * 100) : 0;
+            state.cardStats[hash].difficulty = level === 'easy' ? 1 : level === 'medium' ? 2 : 3;
+            state.cardStats[hash].lastSeen = Date.now();
             
-            document.getElementById('score').textContent = score;
-            document.getElementById('total').textContent = totalCards;
-            document.getElementById('progress').textContent = progress + '%';
-            document.getElementById('remaining').textContent = remainingCards.length;
+            localStorage.setItem('cardStats', JSON.stringify(state.cardStats));
         }
-
-        function showCompletion() {
-            const percentage = totalCards > 0 ? Math.round((score / totalCards) * 100) : 0;
-            const duration = sessionStartTime ? Math.round((Date.now() - sessionStartTime) / 1000) : 0;
+        
+        function updateCardStats(card, correct) {
+            const hash = hashCard(card);
+            if (!state.cardStats[hash]) {
+                state.cardStats[hash] = {
+                    seen: 0,
+                    correct: 0,
+                    lastSeen: 0,
+                    difficulty: 2
+                };
+            }
             
-            // Save result
-            const result = {
+            state.cardStats[hash].seen++;
+            if (correct) state.cardStats[hash].correct++;
+            state.cardStats[hash].lastSeen = Date.now();
+            
+            // Auto-adjust difficulty
+            const ratio = state.cardStats[hash].correct / state.cardStats[hash].seen;
+            if (ratio > 0.8) state.cardStats[hash].difficulty = 1;
+            else if (ratio < 0.4) state.cardStats[hash].difficulty = 3;
+            else state.cardStats[hash].difficulty = 2;
+            
+            localStorage.setItem('cardStats', JSON.stringify(state.cardStats));
+        }
+        
+        function updateStats() {
+            const done = state.total - state.pile.length;
+            const pct = state.total > 0 ? Math.round((done / state.total) * 100) : 0;
+            
+            document.getElementById('pts').textContent = state.score;
+            document.getElementById('tot').textContent = state.total;
+            document.getElementById('correct').textContent = state.correctCount;
+            document.getElementById('wrong').textContent = state.wrongCount;
+            document.getElementById('skipped').textContent = state.skippedCount;
+            document.getElementById('left').textContent = state.pile.length;
+            document.getElementById('progressBar').style.width = pct + '%';
+        }
+        
+        // Timer
+        function startTimer() {
+            if (state.timerInterval) clearInterval(state.timerInterval);
+            
+            state.timerInterval = setInterval(() => {
+                if (document.hidden) return; // Pause when tab inactive
+                
+                const elapsed = Math.floor((Date.now() - state.startTime - state.pausedTime) / 1000);
+                const mins = Math.floor(elapsed / 60);
+                const secs = elapsed % 60;
+                document.getElementById('timer').textContent = 
+                    `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+        
+        function pauseSession() {
+            if (state.timerInterval) {
+                clearInterval(state.timerInterval);
+                state.pausedTime += Date.now() - state.startTime;
+                alert('Session paused. Click OK to resume.');
+                state.startTime = Date.now();
+                startTimer();
+            }
+        }
+        
+        // Session Complete
+        function finish() {
+            if (state.timerInterval) clearInterval(state.timerInterval);
+            
+            const pct = state.total > 0 ? Math.round((state.score / state.total) * 100) : 0;
+            const time = state.startTime ? 
+                Math.round((Date.now() - state.startTime - state.pausedTime) / 1000) : 0;
+            
+            // Check goal
+            let goalMsg = '';
+            if (state.goalScore) {
+                if (pct >= state.goalScore) {
+                    goalMsg = `✅ Goal achieved! (${state.goalScore}%)`;
+                } else {
+                    goalMsg = `❌ Goal missed (target: ${state.goalScore}%)`;
+                }
+            }
+            
+            // Save session
+            const session = {
                 id: Date.now(),
                 date: new Date().toISOString(),
-                score: score,
-                total: totalCards,
-                percentage: percentage,
-                duration: duration
+                deck: state.currentDeck || 'untitled',
+                score: state.score,
+                total: state.total,
+                correct: state.correctCount,
+                wrong: state.wrongCount,
+                skipped: state.skippedCount,
+                percent: pct,
+                duration: time,
+                mode: state.mode
             };
             
-            results.push(result);
-            localStorage.setItem('flashcardResults', JSON.stringify(results));
+            state.history.push(session);
+            localStorage.setItem('cardHistory', JSON.stringify(state.history));
             
-            // Auto-save to CSV
-            saveResultsToCSV(result);
+            // Update streak
+            incrementStreak();
             
-            document.getElementById('finalScore').textContent = `${score}/${totalCards} (${percentage}%)`;
-            document.getElementById('completion').style.display = 'block';
+            // Clear backup
+            localStorage.removeItem('sessionBackup');
             
-            document.getElementById('completion').scrollIntoView({ behavior: 'smooth' });
+            // Show completion
+            document.getElementById('finalNum').textContent = `${state.score}/${state.total} (${pct}%)`;
+            document.getElementById('goalStatus').textContent = goalMsg;
+            document.getElementById('doneBox').style.display = 'block';
+            
+            document.getElementById('doneBox').scrollIntoView({ behavior: 'smooth' });
         }
-
-        function restartGame() {
-            if (flashcards.length > 0) {
-                initializeGame();
+        
+        function goAgain() {
+            if (state.cards.length > 0) {
+                startStudy();
             }
         }
-
-        // Create Page Functions
-        function toggleAnswerType() {
-            const answerType = document.getElementById('answerType').value;
-            const textGroup = document.getElementById('textAnswerGroup');
-            const imageGroup = document.getElementById('imageAnswerGroup');
-            
-            if (answerType === 'image') {
-                textGroup.classList.add('hidden');
-                imageGroup.classList.remove('hidden');
+        
+        function reviewMissed() {
+            if (state.missedCards.length > 0) {
+                state.cards = state.missedCards;
+                state.currentDeck = 'review: missed cards';
+                startStudy();
             } else {
-                textGroup.classList.remove('hidden');
-                imageGroup.classList.add('hidden');
+                alert('No missed cards to review!');
             }
         }
-
-        function addFlashcard() {
-            const question = document.getElementById('questionInput').value.trim();
-            const answerType = document.getElementById('answerType').value;
-            let answer = '';
+        
+        // Session Recovery
+        function backupSession() {
+            const backup = {
+                cards: state.cards,
+                currentDeck: state.currentDeck,
+                pile: state.pile,
+                score: state.score,
+                correctCount: state.correctCount,
+                wrongCount: state.wrongCount,
+                skippedCount: state.skippedCount,
+                total: state.total,
+                startTime: state.startTime,
+                mode: state.mode
+            };
             
-            if (answerType === 'text') {
-                answer = document.getElementById('answerInput').value.trim();
-            } else {
-                answer = document.getElementById('imageUrlInput').value.trim();
+            localStorage.setItem('sessionBackup', JSON.stringify(backup));
+        }
+        
+        function checkSessionRecovery() {
+            const backup = localStorage.getItem('sessionBackup');
+            if (backup) {
+                if (confirm('Found an incomplete session. Resume?')) {
+                    const data = JSON.parse(backup);
+                    Object.assign(state, data);
+                    
+                    document.getElementById('studyZone').style.display = 'block';
+                    updateStats();
+                    nextCard();
+                } else {
+                    localStorage.removeItem('sessionBackup');
+                }
+            }
+        }
+        
+        // Create Cards
+        function formatText(type) {
+            const selection = window.getSelection();
+            const text = selection.toString();
+            
+            if (text) {
+                let formatted = text;
+                if (type === 'bold') formatted = `**${text}**`;
+                else if (type === 'italic') formatted = `*${text}*`;
+                else if (type === 'code') formatted = `\`${text}\``;
+                
+                document.execCommand('insertText', false, formatted);
+            }
+        }
+        
+        function switchType() {
+            const type = document.getElementById('aType').value;
+            document.getElementById('textAns').classList.toggle('hidden', type !== 'text');
+            document.getElementById('imgAns').classList.toggle('hidden', type !== 'image');
+            document.getElementById('audioAns').classList.toggle('hidden', type !== 'audio');
+        }
+        
+        function addCard() {
+            const q = document.getElementById('qText').innerHTML.trim();
+            const type = document.getElementById('aType').value;
+            let a = '';
+            
+            if (type === 'text') {
+                a = document.getElementById('aText').innerHTML.trim();
+            } else if (type === 'image') {
+                a = document.getElementById('imgUrl').value.trim();
+            } else if (type === 'audio') {
+                a = document.getElementById('audioUrl').value.trim();
             }
             
-            if (!question || !answer) {
-                alert('Please fill in both question and answer fields.');
+            const tags = document.getElementById('tagInput').value
+                .split(',')
+                .map(t => t.trim())
+                .filter(t => t);
+            
+            if (!q || !a) {
+                alert('fill everything in!');
                 return;
             }
             
-            const flashcard = {
-                question: question,
-                answer: answer
+            const card = { 
+                question: q, 
+                answer: a,
+                tags: tags
             };
             
-            if (answerType === 'image') {
-                flashcard.type = 'image';
+            if (type !== 'text') card.type = type;
+            
+            state.myDeck.push(card);
+            showDeck();
+            clearFields();
+            autoSaveDeck();
+        }
+        
+        function clearFields() {
+            document.getElementById('qText').innerHTML = '';
+            document.getElementById('aText').innerHTML = '';
+            document.getElementById('imgUrl').value = '';
+            document.getElementById('audioUrl').value = '';
+            document.getElementById('tagInput').value = '';
+            document.getElementById('aType').value = 'text';
+            switchType();
+        }
+        
+        function showDeck() {
+            const container = document.getElementById('deckCards');
+            const count = document.getElementById('deckSize');
+            const filterInput = document.getElementById('filterInput').value.toLowerCase();
+            
+            // Get unique tags
+            const allTags = [...new Set(state.myDeck.flatMap(c => c.tags || []))];
+            showFilterTags(allTags);
+            
+            // Filter cards
+            let filtered = state.myDeck;
+            if (filterInput) {
+                filtered = filtered.filter(c => 
+                    c.question.toLowerCase().includes(filterInput) ||
+                    c.answer.toLowerCase().includes(filterInput)
+                );
+            }
+            if (state.filterTag) {
+                filtered = filtered.filter(c => c.tags && c.tags.includes(state.filterTag));
             }
             
-            createdFlashcards.push(flashcard);
-            renderFlashcardsList();
-            clearForm();
-        }
-
-        function renderFlashcardsList() {
-            const container = document.getElementById('cardsContainer');
-            const cardCount = document.getElementById('cardCount');
+            count.textContent = `${filtered.length} card${filtered.length !== 1 ? 's' : ''}`;
             
-            cardCount.textContent = createdFlashcards.length;
-            
-            if (createdFlashcards.length === 0) {
-                container.innerHTML = '<p style="color: #a0aec0; text-align: center;">No flashcards created yet.</p>';
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="empty-deck">no matching cards</div>';
                 return;
             }
             
-            container.innerHTML = createdFlashcards.map((card, index) => `
-                <div class="flashcard-item">
-                    <div class="flashcard-content">
-                        <div class="flashcard-question">${card.question}</div>
-                        <div class="flashcard-answer">
-                            ${card.type === 'image' ? `📷 ${card.answer}` : card.answer}
-                        </div>
+            container.innerHTML = filtered.map((card, i) => `
+                <div class="one-card">
+                    <div class="card-info">
+                        <div class="card-q">q: ${card.question}</div>
+                        <div class="card-a">a: ${card.type === 'image' ? '🖼️ ' : card.type === 'audio' ? '🎵 ' : ''}${card.answer}</div>
+                        ${card.tags && card.tags.length ? `
+                            <div class="card-tags">
+                                ${card.tags.map(t => `<span class="card-tag">${t}</span>`).join('')}
+                            </div>
+                        ` : ''}
                     </div>
-                    <div class="flashcard-actions">
-                        <button class="btn btn-danger btn-small" onclick="deleteFlashcard(${index})">Delete</button>
+                    <div class="card-actions">
+                        <button class="btn btn-warning tiny-btn" onclick="editCard(${state.myDeck.indexOf(card)})">✏️</button>
+                        <button class="btn btn-nope tiny-btn" onclick="removeCard(${state.myDeck.indexOf(card)})">×</button>
                     </div>
                 </div>
             `).join('');
         }
-
-        function deleteFlashcard(index) {
-            createdFlashcards.splice(index, 1);
-            renderFlashcardsList();
-        }
-
-        function clearForm() {
-            document.getElementById('questionInput').value = '';
-            document.getElementById('answerInput').value = '';
-            document.getElementById('imageUrlInput').value = '';
-            document.getElementById('answerType').value = 'text';
-            toggleAnswerType();
-        }
-
-        function exportFlashcards() {
-            if (createdFlashcards.length === 0) {
-                alert('No flashcards to export. Create some flashcards first.');
+        
+        function showFilterTags(tags) {
+            const container = document.getElementById('filterTags');
+            if (tags.length === 0) {
+                container.innerHTML = '';
                 return;
             }
             
-            const dataStr = JSON.stringify(createdFlashcards, null, 2);
-            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-            
-            const exportFileDefaultName = 'flashcards.json';
-            
-            const linkElement = document.createElement('a');
-            linkElement.setAttribute('href', dataUri);
-            linkElement.setAttribute('download', exportFileDefaultName);
-            linkElement.click();
+            container.innerHTML = tags.map(tag => `
+                <div class="filter-tag ${state.filterTag === tag ? 'active' : ''}" 
+                     onclick="filterByTag('${tag}')">${tag}</div>
+            `).join('');
         }
-
-        function clearAllCards() {
-            if (confirm('Are you sure you want to delete all created flashcards?')) {
-                createdFlashcards = [];
-                renderFlashcardsList();
+        
+        function filterByTag(tag) {
+            state.filterTag = state.filterTag === tag ? '' : tag;
+            showDeck();
+        }
+        
+        function filterCards() {
+            showDeck();
+        }
+        
+        function editCard(index) {
+            const card = state.myDeck[index];
+            document.getElementById('qText').innerHTML = card.question;
+            
+            if (card.type === 'image') {
+                document.getElementById('aType').value = 'image';
+                document.getElementById('imgUrl').value = card.answer;
+            } else if (card.type === 'audio') {
+                document.getElementById('aType').value = 'audio';
+                document.getElementById('audioUrl').value = card.answer;
+            } else {
+                document.getElementById('aType').value = 'text';
+                document.getElementById('aText').innerHTML = card.answer;
             }
-        }
-
-        // Results Page Functions
-        function loadResultsPage() {
-            updateStats();
-            renderResultsTable();
-            drawScoreChart();
-        }
-
-        function updateStats() {
-            const totalSessions = results.length;
-            const totalQuestions = results.reduce((sum, r) => sum + r.total, 0);
-            const averageScore = totalSessions > 0 ? 
-                Math.round(results.reduce((sum, r) => sum + r.percentage, 0) / totalSessions) : 0;
-            const bestScore = totalSessions > 0 ? 
-                Math.max(...results.map(r => r.percentage)) : 0;
             
-            document.getElementById('totalSessions').textContent = totalSessions;
-            document.getElementById('totalQuestions').textContent = totalQuestions;
-            document.getElementById('averageScore').textContent = averageScore + '%';
-            document.getElementById('bestScore').textContent = bestScore + '%';
-        }
-
-        function renderResultsTable() {
-            const tbody = document.getElementById('resultsTableBody');
+            document.getElementById('tagInput').value = (card.tags || []).join(', ');
+            switchType();
             
-            if (results.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #a0aec0;">No results yet. Complete a study session to see data.</td></tr>';
+            // Remove the card being edited
+            state.myDeck.splice(index, 1);
+            showDeck();
+        }
+        
+        function removeCard(index) {
+            const card = state.myDeck[index];
+            state.deletedCards.push(card);
+            state.myDeck.splice(index, 1);
+            
+            // Show deleted cards section
+            showDeletedCards();
+            showDeck();
+            autoSaveDeck();
+        }
+        
+        function showDeletedCards() {
+            if (state.deletedCards.length === 0) {
+                document.getElementById('deletedCards').classList.add('hidden');
                 return;
             }
             
-            tbody.innerHTML = results.slice().reverse().map(result => {
-                const date = new Date(result.date).toLocaleDateString();
-                const duration = formatDuration(result.duration);
+            document.getElementById('deletedCards').classList.remove('hidden');
+            document.getElementById('deletedList').innerHTML = state.deletedCards.map((card, i) => `
+                <div class="one-card">
+                    <div class="card-info">
+                        <div class="card-q">q: ${card.question}</div>
+                        <div class="card-a">a: ${card.answer}</div>
+                    </div>
+                    <button class="btn btn-go tiny-btn" onclick="restoreCard(${i})">restore</button>
+                </div>
+            `).join('');
+        }
+        
+        function restoreCard(index) {
+            const card = state.deletedCards.splice(index, 1)[0];
+            state.myDeck.push(card);
+            showDeletedCards();
+            showDeck();
+            autoSaveDeck();
+        }
+        
+        function restoreAll() {
+            state.myDeck.push(...state.deletedCards);
+            state.deletedCards = [];
+            showDeletedCards();
+            showDeck();
+            autoSaveDeck();
+        }
+        
+        function autoSaveDeck() {
+            if (state.myDeck.length > 0) {
+                localStorage.setItem('autosavedDeck', JSON.stringify(state.myDeck));
+                localStorage.setItem('autosavedDeckDate', new Date().toISOString());
+            }
+        }
+        
+        function loadAutosavedDeck() {
+            const saved = localStorage.getItem('autosavedDeck');
+            const savedDate = localStorage.getItem('autosavedDeckDate');
+            
+            if (saved && savedDate) {
+                const date = new Date(savedDate);
+                const ago = Math.round((Date.now() - date) / (1000 * 60));
+                
+                if (confirm(`Found auto-saved deck from ${ago} minutes ago. Load it?`)) {
+                    state.myDeck = JSON.parse(saved);
+                    showDeck();
+                }
+            }
+        }
+        
+        function saveDeck() {
+            if (state.myDeck.length === 0) {
+                alert('no cards to save!');
+                return;
+            }
+            
+            const json = JSON.stringify(state.myDeck, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `flashcards_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+        }
+        
+        function shareDeck() {
+            if (state.myDeck.length === 0) {
+                alert('no cards to share!');
+                return;
+            }
+            
+            // Create shareable link (using base64 encoding for simplicity)
+            const data = btoa(JSON.stringify(state.myDeck));
+            const shareUrl = `${window.location.origin}${window.location.pathname}#deck=${data}`;
+            
+            document.getElementById('shareLink').textContent = shareUrl;
+            document.getElementById('shareModal').classList.add('show');
+        }
+        
+        function copyShareLink() {
+            const link = document.getElementById('shareLink').textContent;
+            navigator.clipboard.writeText(link).then(() => {
+                alert('Link copied!');
+            });
+        }
+        
+        function closeModal() {
+            document.getElementById('shareModal').classList.remove('show');
+        }
+        
+        function nukeDeck() {
+            if (confirm('delete everything? this cannot be undone!')) {
+                state.myDeck = [];
+                state.deletedCards = [];
+                showDeck();
+                showDeletedCards();
+                localStorage.removeItem('autosavedDeck');
+            }
+        }
+        
+        // Stats Functions
+        function showStats() {
+            updateNumbers();
+            showHistory();
+            drawGraph();
+            showWeakCards();
+        }
+        
+        function updateNumbers() {
+            const sessions = state.history.length;
+            const questions = state.history.reduce((sum, h) => sum + h.total, 0);
+            const avg = sessions > 0 ? 
+                Math.round(state.history.reduce((sum, h) => sum + h.percent, 0) / sessions) : 0;
+            const best = sessions > 0 ? 
+                Math.max(...state.history.map(h => h.percent)) : 0;
+            
+            document.getElementById('sessions').textContent = sessions;
+            document.getElementById('questions').textContent = questions;
+            document.getElementById('avgScore').textContent = avg + '%';
+            document.getElementById('best').textContent = best + '%';
+            document.getElementById('streakStat').textContent = state.streak;
+        }
+        
+        function showWeakCards() {
+            const container = document.getElementById('weakCards');
+            
+            // Get cards with poor performance
+            const weakCards = Object.entries(state.cardStats)
+                .filter(([hash, stats]) => {
+                    const ratio = stats.correct / stats.seen;
+                    return stats.seen >= 3 && ratio < 0.5;
+                })
+                .sort((a, b) => {
+                    const aRatio = a[1].correct / a[1].seen;
+                    const bRatio = b[1].correct / b[1].seen;
+                    return aRatio - bRatio;
+                })
+                .slice(0, 5);
+            
+            if (weakCards.length === 0) {
+                container.innerHTML = '<div class="no-data">no struggling cards yet</div>';
+                return;
+            }
+            
+            container.innerHTML = weakCards.map(([hash, stats]) => {
+                const ratio = Math.round((stats.correct / stats.seen) * 100);
+                return `
+                    <div class="weak-card">
+                        <div class="weak-info">
+                            <div class="weak-q">Card #${hash.substring(0, 6)}</div>
+                            <div class="weak-stats">
+                                Seen: ${stats.seen} | Correct: ${stats.correct}
+                            </div>
+                        </div>
+                        <div class="weak-score">${ratio}%</div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function showHistory() {
+            const tbody = document.getElementById('historyRows');
+            
+            if (state.history.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="no-data">no sessions yet... go study!</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = state.history.slice().reverse().map(h => {
+                const date = new Date(h.date);
+                const when = `${date.getMonth()+1}/${date.getDate()} ${date.getHours()}:${date.getMinutes().toString().padStart(2,'0')}`;
+                const time = `${Math.floor(h.duration/60)}:${(h.duration%60).toString().padStart(2,'0')}`;
                 
                 return `
                     <tr>
-                        <td>${date}</td>
-                        <td>${result.score}/${result.total}</td>
-                        <td>${result.total}</td>
-                        <td>${result.percentage}%</td>
-                        <td>${duration}</td>
+                        <td>${when}</td>
+                        <td>${h.deck || 'untitled'}</td>
+                        <td>${h.score}/${h.total}</td>
+                        <td>${h.total}</td>
+                        <td>${h.percent}%</td>
+                        <td>${time}</td>
                         <td>
-                            <button class="btn btn-danger btn-small" onclick="deleteResult(${result.id})">Delete</button>
+                            <button class="btn btn-nope tiny-btn" onclick="deleteHistory(${h.id})">×</button>
                         </td>
                     </tr>
                 `;
             }).join('');
         }
-
-        function formatDuration(seconds) {
-            const mins = Math.floor(seconds / 60);
-            const secs = seconds % 60;
-            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        
+        function deleteHistory(id) {
+            state.history = state.history.filter(h => h.id !== id);
+            localStorage.setItem('cardHistory', JSON.stringify(state.history));
+            showStats();
         }
-
-        function deleteResult(id) {
-            results = results.filter(r => r.id !== id);
-            localStorage.setItem('flashcardResults', JSON.stringify(results));
-            loadResultsPage();
-        }
-
-        function clearAllResults() {
-            if (confirm('Are you sure you want to delete all results? This cannot be undone.')) {
-                results = [];
-                localStorage.setItem('flashcardResults', JSON.stringify(results));
-                loadResultsPage();
+        
+        function wipeHistory() {
+            if (confirm('delete all history? this cannot be undone!')) {
+                state.history = [];
+                state.cardStats = {};
+                localStorage.setItem('cardHistory', JSON.stringify(state.history));
+                localStorage.setItem('cardStats', JSON.stringify(state.cardStats));
+                showStats();
             }
         }
-
-        function saveResultsToCSV(newResult) {
-            // Create CSV content
-            const csvContent = formatResultAsCSV(newResult);
-            
-            // Create blob and download
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            
-            link.setAttribute('href', url);
-            link.setAttribute('download', `flashcard_session_${new Date().toISOString().split('T')[0]}.csv`);
-            link.style.visibility = 'hidden';
-            
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        function formatResultAsCSV(result) {
-            const headers = 'Date,Score,Total,Percentage,Duration_Seconds\n';
-            const row = `${new Date(result.date).toISOString()},${result.score},${result.total},${result.percentage},${result.duration}\n`;
-            return headers + row;
-        }
-
-        function exportResults() {
-            if (results.length === 0) {
-                alert('No results to export. Complete a study session first.');
+        
+        function saveCSV() {
+            if (state.history.length === 0) {
+                alert('nothing to save!');
                 return;
             }
             
-            // Create CSV content
-            const headers = 'Date,Score,Total,Percentage,Duration_Seconds\n';
-            const rows = results.map(result => 
-                `${new Date(result.date).toISOString()},${result.score},${result.total},${result.percentage},${result.duration}`
-            ).join('\n');
+            const csv = 'Date,Deck,Score,Total,Correct,Wrong,Skipped,Percent,Duration,Mode\n' + 
+                state.history.map(h => 
+                    `${h.date},${h.deck || 'untitled'},${h.score},${h.total},${h.correct || 0},${h.wrong || 0},${h.skipped || 0},${h.percent},${h.duration},${h.mode || 'classic'}`
+                ).join('\n');
             
-            const csvContent = headers + rows;
-            
-            // Create blob and download
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
+            const blob = new Blob([csv], { type: 'text/csv' });
             const url = URL.createObjectURL(blob);
             
-            link.setAttribute('href', url);
-            link.setAttribute('download', `flashcard_results_${new Date().toISOString().split('T')[0]}.csv`);
-            link.style.visibility = 'hidden';
-            
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `flashcard_history_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
         }
-
-        function importResults() {
-            const file = document.getElementById('csvFile').files[0];
+        
+        function exportDetailed() {
+            const data = {
+                history: state.history,
+                cardStats: state.cardStats,
+                streak: state.streak,
+                exportDate: new Date().toISOString()
+            };
+            
+            const json = JSON.stringify(data, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `flashcard_detailed_stats_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+        }
+        
+        function loadCSV() {
+            const file = document.getElementById('csvIn').files[0];
             if (!file) return;
             
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
-                    const csv = e.target.result;
-                    const lines = csv.split('\n');
-                    const headers = lines[0].split(',');
+                    const lines = e.target.result.split('\n');
+                    const imported = [];
                     
-                    // Validate headers
-                    const expectedHeaders = ['Date', 'Score', 'Total', 'Percentage', 'Duration_Seconds'];
-                    const isValidFormat = expectedHeaders.every(header => headers.includes(header));
-                    
-                    if (!isValidFormat) {
-                        alert('Invalid CSV format. Please use exported CSV files from this app.');
-                        return;
-                    }
-                    
-                    // Parse data rows
-                    const importedResults = [];
                     for (let i = 1; i < lines.length; i++) {
                         const line = lines[i].trim();
                         if (!line) continue;
                         
-                        const values = line.split(',');
-                        if (values.length >= 5) {
-                            const result = {
-                                id: Date.now() + Math.random(), // Unique ID
-                                date: values[0],
-                                score: parseInt(values[1]),
-                                total: parseInt(values[2]),
-                                percentage: parseInt(values[3]),
-                                duration: parseInt(values[4])
-                            };
-                            importedResults.push(result);
+                        const vals = line.split(',');
+                        if (vals.length >= 5) {
+                            imported.push({
+                                id: Date.now() + Math.random(),
+                                date: vals[0],
+                                deck: vals[1],
+                                score: parseFloat(vals[2]),
+                                total: parseInt(vals[3]),
+                                correct: parseInt(vals[4] || 0),
+                                wrong: parseInt(vals[5] || 0),
+                                skipped: parseInt(vals[6] || 0),
+                                percent: parseInt(vals[7]),
+                                duration: parseInt(vals[8]),
+                                mode: vals[9] || 'classic'
+                            });
                         }
                     }
                     
-                    if (importedResults.length > 0) {
-                        // Ask user how to handle import
-                        const action = confirm(
-                            `Found ${importedResults.length} result(s) to import.\n\n` +
-                            'Click OK to ADD to existing results, or Cancel to REPLACE all results.'
-                        );
+                    if (imported.length > 0) {
+                        // Check for duplicates
+                        const existingDates = new Set(state.history.map(h => h.date));
+                        const newItems = imported.filter(i => !existingDates.has(i.date));
                         
-                        if (action) {
-                            // Add to existing results
-                            results = [...results, ...importedResults];
-                        } else {
-                            // Replace all results
-                            results = importedResults;
+                        if (newItems.length < imported.length) {
+                            alert(`Skipped ${imported.length - newItems.length} duplicate sessions`);
                         }
                         
-                        localStorage.setItem('flashcardResults', JSON.stringify(results));
-                        loadResultsPage();
-                        alert(`Successfully imported ${importedResults.length} result(s)!`);
-                    } else {
-                        alert('No valid results found in the CSV file.');
+                        state.history = [...state.history, ...newItems];
+                        localStorage.setItem('cardHistory', JSON.stringify(state.history));
+                        showStats();
+                        alert(`Imported ${newItems.length} sessions!`);
                     }
-                    
-                } catch (error) {
-                    alert('Error reading CSV file: ' + error.message);
+                } catch (err) {
+                    alert('Error reading CSV: ' + err.message);
                 }
             };
-            
             reader.readAsText(file);
         }
-
-        function drawScoreChart() {
-            const canvas = document.getElementById('scoreChart');
+        
+        function drawGraph() {
+            const canvas = document.getElementById('chart');
             const ctx = canvas.getContext('2d');
             
-            // Clear canvas
+            canvas.width = canvas.offsetWidth;
+            canvas.height = 200;
+            
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            if (results.length === 0) {
-                ctx.fillStyle = '#a0aec0';
-                ctx.font = '16px sans-serif';
+            if (state.history.length < 2) {
+                ctx.fillStyle = 'var(--text-muted)';
+                ctx.font = '14px sans-serif';
                 ctx.textAlign = 'center';
-                ctx.fillText('No data to display', canvas.width / 2, canvas.height / 2);
+                ctx.fillText('need more data...', canvas.width / 2, 100);
                 return;
             }
             
-            // Chart settings
-            const padding = 40;
-            const chartWidth = canvas.width - (padding * 2);
-            const chartHeight = canvas.height - (padding * 2);
-            
-            // Get data points
-            const dataPoints = results.slice(-10); // Last 10 results
-            const maxScore = 100;
-            const minScore = 0;
+            const points = state.history.slice(-10);
+            const pad = 30;
+            const w = canvas.width - pad * 2;
+            const h = canvas.height - pad * 2;
             
             // Draw axes
-            ctx.strokeStyle = '#718096';
+            ctx.strokeStyle = 'var(--border)';
             ctx.lineWidth = 2;
-            
-            // Y-axis
             ctx.beginPath();
-            ctx.moveTo(padding, padding);
-            ctx.lineTo(padding, padding + chartHeight);
+            ctx.moveTo(pad, pad);
+            ctx.lineTo(pad, pad + h);
+            ctx.lineTo(pad + w, pad + h);
             ctx.stroke();
             
-            // X-axis
-            ctx.beginPath();
-            ctx.moveTo(padding, padding + chartHeight);
-            ctx.lineTo(padding + chartWidth, padding + chartHeight);
-            ctx.stroke();
-            
-            // Draw grid lines and labels
-            ctx.strokeStyle = '#4a5568';
+            // Draw grid
+            ctx.strokeStyle = 'var(--bg-hover)';
             ctx.lineWidth = 1;
-            ctx.fillStyle = '#a0aec0';
-            ctx.font = '12px sans-serif';
-            ctx.textAlign = 'center';
+            ctx.setLineDash([2, 4]);
             
-            // Y-axis labels
-            for (let i = 0; i <= 5; i++) {
-                const y = padding + (chartHeight * i / 5);
-                const value = maxScore - (maxScore * i / 5);
-                
+            for (let i = 1; i <= 4; i++) {
+                const y = pad + (h * i / 4);
                 ctx.beginPath();
-                ctx.moveTo(padding - 5, y);
-                ctx.lineTo(padding + chartWidth, y);
+                ctx.moveTo(pad, y);
+                ctx.lineTo(pad + w, y);
                 ctx.stroke();
-                
-                ctx.textAlign = 'right';
-                ctx.fillText(value + '%', padding - 10, y + 4);
             }
             
-            if (dataPoints.length < 2) return;
+            ctx.setLineDash([]);
+            
+            // Y-axis labels
+            ctx.fillStyle = 'var(--text-muted)';
+            ctx.font = '11px sans-serif';
+            ctx.textAlign = 'right';
+            
+            for (let i = 0; i <= 4; i++) {
+                const y = pad + (h * i / 4);
+                const value = 100 - (25 * i);
+                ctx.fillText(value + '%', pad - 8, y + 3);
+            }
             
             // Draw line
-            ctx.strokeStyle = '#4299e1';
+            ctx.strokeStyle = 'var(--accent)';
             ctx.lineWidth = 3;
             ctx.beginPath();
             
-            dataPoints.forEach((point, index) => {
-                const x = padding + (chartWidth * index / (dataPoints.length - 1));
-                const y = padding + chartHeight - (chartHeight * point.percentage / 100);
+            points.forEach((p, i) => {
+                const x = pad + (w * i / (points.length - 1));
+                const y = pad + h - (h * p.percent / 100);
                 
-                if (index === 0) {
-                    ctx.moveTo(x, y);
-                } else {
-                    ctx.lineTo(x, y);
-                }
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
             });
             
             ctx.stroke();
             
-            // Draw data points
-            ctx.fillStyle = '#4299e1';
-            dataPoints.forEach((point, index) => {
-                const x = padding + (chartWidth * index / (dataPoints.length - 1));
-                const y = padding + chartHeight - (chartHeight * point.percentage / 100);
+            // Draw points
+            points.forEach((p, i) => {
+                const x = pad + (w * i / (points.length - 1));
+                const y = pad + h - (h * p.percent / 100);
                 
+                ctx.fillStyle = 'var(--bg-dark)';
                 ctx.beginPath();
-                ctx.arc(x, y, 4, 0, 2 * Math.PI);
+                ctx.arc(x, y, 5, 0, Math.PI * 2);
                 ctx.fill();
+                
+                ctx.strokeStyle = 'var(--warning)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
             });
         }
-
-        // Enter key support
-        document.getElementById('answerInput').addEventListener('keypress', function(event) {
-            if (event.key === 'Enter') {
-                checkAnswer();
+        
+        // Keyboard Shortcuts
+        function setupKeyboardShortcuts() {
+            document.addEventListener('keydown', function(e) {
+                // Don't trigger if typing in input
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || 
+                    e.target.contentEditable === 'true') {
+                    if (e.key === 'Enter' && e.target.id === 'userAnswer') {
+                        checkTyped();
+                    }
+                    return;
+                }
+                
+                // Study shortcuts
+                if (document.getElementById('studyZone').style.display === 'block') {
+                    switch(e.key) {
+                        case ' ':
+                            e.preventDefault();
+                            if (!state.flipped) flipCard();
+                            break;
+                        case '1':
+                            if (state.flipped && state.scoring) gotIt();
+                            break;
+                        case '2':
+                            if (state.flipped && state.scoring) missedIt();
+                            break;
+                        case '3':
+                            skipCard();
+                            break;
+                        case 'q':
+                            if (state.spaced && state.flipped) setDifficulty('easy');
+                            break;
+                        case 'w':
+                            if (state.spaced && state.flipped) setDifficulty('medium');
+                            break;
+                        case 'e':
+                            if (state.spaced && state.flipped) setDifficulty('hard');
+                            break;
+                        case 'p':
+                            pauseSession();
+                            break;
+                    }
+                }
+            });
+        }
+        
+        // Check for shared deck in URL
+        function checkSharedDeck() {
+            const hash = window.location.hash;
+            if (hash.startsWith('#deck=')) {
+                try {
+                    const data = atob(hash.substring(6));
+                    const cards = JSON.parse(data);
+                    
+                    if (validateCards(cards)) {
+                        state.cards = cards;
+                        state.currentDeck = 'shared deck';
+                        startStudy();
+                        
+                        // Clear hash
+                        window.location.hash = '';
+                    }
+                } catch (err) {
+                    console.error('Failed to load shared deck:', err);
+                }
             }
+        }
+        
+        
+        // Initialize app
+        window.addEventListener('DOMContentLoaded', function() {
+            init();
+            loadAutosavedDeck();
+            checkSharedDeck();
         });
-
-        document.getElementById('questionInput').addEventListener('keypress', function(event) {
-            if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault();
-                document.getElementById('answerInput').focus();
-            }
-        });
-
-        // Initialize
-        renderFlashcardsList();
     </script>
 </body>
 </html>
