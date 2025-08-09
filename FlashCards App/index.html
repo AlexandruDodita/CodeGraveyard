@@ -16,35 +16,71 @@
             background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
             color: #e2e8f0;
             min-height: 100vh;
-            padding: 20px;
         }
         
         .container {
-            max-width: 900px;
+            max-width: 1200px;
             margin: 0 auto;
             background: #2d3748;
-            border-radius: 16px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-            overflow: hidden;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
         
         .header {
             background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
-            padding: 24px;
-            text-align: center;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         
         .header h1 {
             color: white;
             font-size: 24px;
             font-weight: 600;
-            margin: 0;
+        }
+        
+        .nav-tabs {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .nav-tab {
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .nav-tab:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .nav-tab.active {
+            background: white;
+            color: #3182ce;
         }
         
         .content {
+            flex: 1;
             padding: 24px;
         }
         
+        .page {
+            display: none;
+        }
+        
+        .page.active {
+            display: block;
+        }
+        
+        /* Study Page Styles */
         .file-section {
             background: #4a5568;
             border-radius: 12px;
@@ -280,27 +316,6 @@
             border-color: #a0aec0;
         }
         
-        .feedback {
-            margin-top: 20px;
-            padding: 16px;
-            border-radius: 8px;
-            text-align: center;
-            font-weight: 600;
-            display: none;
-        }
-        
-        .feedback.correct {
-            background: #22543d;
-            color: #9ae6b4;
-            border: 2px solid #48bb78;
-        }
-        
-        .feedback.incorrect {
-            background: #742a2a;
-            color: #feb2b2;
-            border: 2px solid #f56565;
-        }
-        
         .completion {
             text-align: center;
             padding: 48px 32px;
@@ -322,13 +337,199 @@
             margin-bottom: 8px;
         }
         
+        /* Create Page Styles */
+        .create-form {
+            background: #4a5568;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            color: #e2e8f0;
+            font-weight: 500;
+        }
+        
+        .form-input, .form-textarea, .form-select {
+            width: 100%;
+            background: #1a202c;
+            border: 2px solid #4a5568;
+            border-radius: 8px;
+            padding: 12px 16px;
+            color: #e2e8f0;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-input:focus, .form-textarea:focus, .form-select:focus {
+            outline: none;
+            border-color: #4299e1;
+        }
+        
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        .flashcards-list {
+            background: #1a202c;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .flashcard-item {
+            background: #4a5568;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        
+        .flashcard-content {
+            flex: 1;
+        }
+        
+        .flashcard-question {
+            font-weight: 600;
+            color: #4299e1;
+            margin-bottom: 8px;
+        }
+        
+        .flashcard-answer {
+            color: #a0aec0;
+        }
+        
+        .flashcard-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+        
+        /* Results Page Styles */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .stat-card {
+            background: #4a5568;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid #718096;
+        }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #4299e1;
+            margin-bottom: 8px;
+        }
+        
+        .stat-label {
+            color: #a0aec0;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .chart-container {
+            background: #4a5568;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            height: 400px;
+            position: relative;
+        }
+        
+        .chart-title {
+            color: #e2e8f0;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .results-table {
+            background: #4a5568;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .table-header {
+            background: #1a202c;
+            padding: 16px 20px;
+            border-bottom: 1px solid #718096;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .table-title {
+            color: #e2e8f0;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .table th,
+        .table td {
+            padding: 12px 20px;
+            text-align: left;
+            border-bottom: 1px solid #718096;
+        }
+        
+        .table th {
+            background: #2d3748;
+            color: #a0aec0;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .table td {
+            color: #e2e8f0;
+        }
+        
+        .table tbody tr:hover {
+            background: #2d3748;
+        }
+        
         .hidden {
             display: none !important;
         }
         
         @media (max-width: 768px) {
-            .container {
-                margin: 10px;
+            .header {
+                flex-direction: column;
+                gap: 16px;
+            }
+            
+            .nav-tabs {
+                width: 100%;
+                justify-content: center;
             }
             
             .content {
@@ -348,6 +549,10 @@
             .btn {
                 width: 200px;
             }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -355,80 +560,192 @@
     <div class="container">
         <div class="header">
             <h1>🃏 Flashcard App</h1>
+            <div class="nav-tabs">
+                <button class="nav-tab active" onclick="switchPage('study', this)">Study</button>
+                <button class="nav-tab" onclick="switchPage('create', this)">Create</button>
+                <button class="nav-tab" onclick="switchPage('results', this)">Results</button>
+            </div>
         </div>
         
         <div class="content">
-            <div class="file-section">
-                <input type="file" id="jsonFile" accept=".json" style="display: none;">
-                <label for="jsonFile" class="file-input-label">
-                    📁 Click to Select JSON File
-                </label>
-                <div class="format-info">
-                    <strong>Expected formats:</strong><br>
-                    Text: [{"question": "What is 2+2?", "answer": "4"}, ...]<br>
-                    Images: [{"question": "What animal?", "answer": "dog.jpg", "type": "image"}, ...]
-                </div>
-            </div>
-            
-            <div class="settings">
-                <label>
-                    <input type="checkbox" id="scoringMode" checked>
-                    Enable Scoring Mode
-                </label>
-            </div>
-            
-            <div id="gameArea" class="game-area">
-                <div class="score-section">
-                    <div class="score-item">
-                        <div class="score-label">Score</div>
-                        <div class="score-value"><span id="score">0</span>/<span id="total">0</span></div>
-                    </div>
-                    <div class="score-item">
-                        <div class="score-label">Progress</div>
-                        <div class="score-value" id="progress">0%</div>
-                    </div>
-                    <div class="score-item">
-                        <div class="score-label">Remaining</div>
-                        <div class="score-value" id="remaining">0</div>
+            <!-- Study Page -->
+            <div id="studyPage" class="page active">
+                <div class="file-section">
+                    <input type="file" id="jsonFile" accept=".json" style="display: none;">
+                    <label for="jsonFile" class="file-input-label">
+                        📁 Click to Select JSON File
+                    </label>
+                    <div class="format-info">
+                        <strong>Expected formats:</strong><br>
+                        Text: [{"question": "What is 2+2?", "answer": "4"}, ...]<br>
+                        Images: [{"question": "What animal?", "answer": "dog.jpg", "type": "image"}, ...]
                     </div>
                 </div>
                 
-                <div class="flashcard" id="flashcard" onclick="handleCardClick()">
-                    <div class="answer-content" id="cardContent">
-                        <!-- Question/Answer content -->
-                    </div>
-                    <div class="click-hint" id="clickHint">Click to reveal answer</div>
+                <div class="settings">
+                    <label>
+                        <input type="checkbox" id="scoringMode" checked>
+                        Enable Scoring Mode
+                    </label>
                 </div>
                 
-                <div class="answer-section">
-                    <div id="textInputSection" class="text-input-section hidden">
-                        <input type="text" id="answerInput" class="answer-input" placeholder="Enter your answer...">
-                        <button class="btn btn-primary" onclick="checkAnswer()">Submit</button>
+                <div id="gameArea" class="game-area">
+                    <div class="score-section">
+                        <div class="score-item">
+                            <div class="score-label">Score</div>
+                            <div class="score-value"><span id="score">0</span>/<span id="total">0</span></div>
+                        </div>
+                        <div class="score-item">
+                            <div class="score-label">Progress</div>
+                            <div class="score-value" id="progress">0%</div>
+                        </div>
+                        <div class="score-item">
+                            <div class="score-label">Remaining</div>
+                            <div class="score-value" id="remaining">0</div>
+                        </div>
+                    </div>
+                    
+                    <div class="flashcard" id="flashcard" onclick="handleCardClick()">
+                        <div class="answer-content" id="cardContent">
+                            <!-- Question/Answer content -->
+                        </div>
+                        <div class="click-hint" id="clickHint">Click to reveal answer</div>
+                    </div>
+                    
+                    <div class="answer-section">
+                        <div id="textInputSection" class="text-input-section hidden">
+                            <input type="text" id="answerInput" class="answer-input" placeholder="Enter your answer...">
+                            <button class="btn btn-primary" onclick="checkAnswer()">Submit</button>
+                        </div>
+                        
+                        <div class="buttons">
+                            <div id="scoringButtons" class="hidden">
+                                <button class="btn btn-success" onclick="markCorrect()">✅ Correct</button>
+                                <button class="btn btn-danger" onclick="markIncorrect()">❌ Wrong</button>
+                            </div>
+                            <button class="btn btn-secondary" onclick="nextCard()">Next Card</button>
+                        </div>
+                    </div>
+                    
+                    <div id="completion" class="completion">
+                        <h2>🎉 Completed!</h2>
+                        <p>You've finished all flashcards!</p>
+                        <p>Final Score: <span id="finalScore"></span></p>
+                        <br>
+                        <button class="btn btn-primary" onclick="restartGame()">Start Over</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Create Page -->
+            <div id="createPage" class="page">
+                <div class="create-form">
+                    <h2 style="color: #e2e8f0; margin-bottom: 20px;">Create New Flashcard</h2>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Question:</label>
+                        <textarea id="questionInput" class="form-textarea" placeholder="Enter your question here..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Answer Type:</label>
+                        <select id="answerType" class="form-select" onchange="toggleAnswerType()">
+                            <option value="text">Text Answer</option>
+                            <option value="image">Image Answer</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" id="textAnswerGroup">
+                        <label class="form-label">Answer:</label>
+                        <textarea id="answerInput" class="form-textarea" placeholder="Enter your answer here..."></textarea>
+                    </div>
+                    
+                    <div class="form-group hidden" id="imageAnswerGroup">
+                        <label class="form-label">Image URL:</label>
+                        <input type="text" id="imageUrlInput" class="form-input" placeholder="Enter image URL or path...">
                     </div>
                     
                     <div class="buttons">
-                        <div id="scoringButtons" class="hidden">
-                            <button class="btn btn-success" onclick="markCorrect()">✅ Correct</button>
-                            <button class="btn btn-danger" onclick="markIncorrect()">❌ Wrong</button>
-                        </div>
-                        <button class="btn btn-secondary" onclick="nextCard()">Next Card</button>
+                        <button class="btn btn-primary" onclick="addFlashcard()">Add Flashcard</button>
+                        <button class="btn btn-secondary" onclick="clearForm()">Clear</button>
                     </div>
                 </div>
                 
-                <div id="feedback" class="feedback"></div>
+                <div class="flashcards-list" id="flashcardsList">
+                    <h3 style="color: #e2e8f0; margin-bottom: 16px;">Created Flashcards (<span id="cardCount">0</span>)</h3>
+                    <div id="cardsContainer">
+                        <p style="color: #a0aec0; text-align: center;">No flashcards created yet.</p>
+                    </div>
+                </div>
                 
-                <div id="completion" class="completion">
-                    <h2>🎉 Completed!</h2>
-                    <p>You've finished all flashcards!</p>
-                    <p>Final Score: <span id="finalScore"></span></p>
-                    <br>
-                    <button class="btn btn-primary" onclick="restartGame()">Start Over</button>
+                <div class="buttons">
+                    <button class="btn btn-success" onclick="exportFlashcards()">📥 Export JSON</button>
+                    <button class="btn btn-danger" onclick="clearAllCards()">🗑️ Clear All</button>
+                </div>
+            </div>
+
+            <!-- Results Page -->
+            <div id="resultsPage" class="page">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalSessions">0</div>
+                        <div class="stat-label">Total Sessions</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalQuestions">0</div>
+                        <div class="stat-label">Questions Answered</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="averageScore">0%</div>
+                        <div class="stat-label">Average Score</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="bestScore">0%</div>
+                        <div class="stat-label">Best Score</div>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <div class="chart-title">Score Progress Over Time</div>
+                    <canvas id="scoreChart" width="800" height="300"></canvas>
+                </div>
+                
+                <div class="results-table">
+                    <div class="table-header">
+                        <div class="table-title">Session History</div>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="file" id="csvFile" accept=".csv" style="display: none;" onchange="importResults()">
+                            <button class="btn btn-primary btn-small" onclick="document.getElementById('csvFile').click()">📁 Import CSV</button>
+                            <button class="btn btn-success btn-small" onclick="exportResults()">💾 Export CSV</button>
+                            <button class="btn btn-danger btn-small" onclick="clearAllResults()">Clear All</button>
+                        </div>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Score</th>
+                                    <th>Questions</th>
+                                    <th>Percentage</th>
+                                    <th>Duration</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="resultsTableBody">
+                                <tr>
+                                    <td colspan="6" style="text-align: center; color: #a0aec0;">No results yet. Complete a study session to see data.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
+        // Game State
         let flashcards = [];
         let currentCard = null;
         let remainingCards = [];
@@ -436,8 +753,38 @@
         let totalCards = 0;
         let showingAnswer = false;
         let scoringMode = true;
-        let hasAnswered = false; // Prevent multiple scoring
+        let hasAnswered = false;
+        let sessionStartTime = null;
+        
+        // Create State
+        let createdFlashcards = [];
+        
+        // Results State
+        let results = JSON.parse(localStorage.getItem('flashcardResults') || '[]');
 
+        // Page Management
+        function switchPage(pageName, targetElement) {
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected page
+            document.getElementById(pageName + 'Page').classList.add('active');
+            targetElement.classList.add('active');
+            
+            // Load page-specific data
+            if (pageName === 'results') {
+                loadResultsPage();
+            }
+        }
+
+        // Study Page Functions
         document.getElementById('jsonFile').addEventListener('change', function(event) {
             const file = event.target.files[0];
             if (file) {
@@ -465,6 +812,7 @@
             shuffleArray(remainingCards);
             score = 0;
             totalCards = flashcards.length;
+            sessionStartTime = Date.now();
             
             document.getElementById('gameArea').style.display = 'block';
             document.getElementById('completion').style.display = 'none';
@@ -489,7 +837,6 @@
             showingAnswer = false;
             hasAnswered = false;
             
-            // Reset card appearance
             const flashcard = document.getElementById('flashcard');
             const cardContent = document.getElementById('cardContent');
             const clickHint = document.getElementById('clickHint');
@@ -499,10 +846,8 @@
             clickHint.style.display = 'block';
             clickHint.textContent = 'Click to reveal answer';
             
-            // Hide all answer sections initially
             document.getElementById('textInputSection').classList.add('hidden');
             document.getElementById('scoringButtons').classList.add('hidden');
-            document.getElementById('feedback').style.display = 'none';
             document.getElementById('answerInput').value = '';
             
             updateScore();
@@ -537,7 +882,6 @@
                 if (scoringMode) {
                     document.getElementById('scoringButtons').classList.remove('hidden');
                 } else {
-                    // For non-scoring mode with text, show input for practice
                     document.getElementById('textInputSection').classList.remove('hidden');
                 }
             }
@@ -549,23 +893,13 @@
             hasAnswered = true;
             const userAnswer = document.getElementById('answerInput').value.trim().toLowerCase();
             const correctAnswer = currentCard.answer.toLowerCase();
-            const feedback = document.getElementById('feedback');
             
             if (userAnswer === correctAnswer) {
                 score++;
-                feedback.textContent = '✅ Correct!';
-                feedback.className = 'feedback correct';
-            } else {
-                feedback.textContent = `❌ Incorrect. The answer is: ${currentCard.answer}`;
-                feedback.className = 'feedback incorrect';
             }
             
-            feedback.style.display = 'block';
             updateScore();
-            
-            setTimeout(() => {
-                nextCard();
-            }, 2000);
+            setTimeout(nextCard, 1000);
         }
 
         function markCorrect() {
@@ -573,24 +907,13 @@
             hasAnswered = true;
             score++;
             updateScore();
-            showFeedbackAndNext('✅ Marked as correct!', 'correct');
+            setTimeout(nextCard, 300); // Instantly move to next card
         }
 
         function markIncorrect() {
             if (!scoringMode || hasAnswered) return;
             hasAnswered = true;
-            showFeedbackAndNext('❌ Marked as incorrect', 'incorrect');
-        }
-
-        function showFeedbackAndNext(message, type) {
-            const feedback = document.getElementById('feedback');
-            feedback.textContent = message;
-            feedback.className = `feedback ${type}`;
-            feedback.style.display = 'block';
-            
-            setTimeout(() => {
-                nextCard();
-            }, 1500);
+            setTimeout(nextCard, 300); // Instantly move to next card
         }
 
         function nextCard() {
@@ -609,10 +932,27 @@
 
         function showCompletion() {
             const percentage = totalCards > 0 ? Math.round((score / totalCards) * 100) : 0;
+            const duration = sessionStartTime ? Math.round((Date.now() - sessionStartTime) / 1000) : 0;
+            
+            // Save result
+            const result = {
+                id: Date.now(),
+                date: new Date().toISOString(),
+                score: score,
+                total: totalCards,
+                percentage: percentage,
+                duration: duration
+            };
+            
+            results.push(result);
+            localStorage.setItem('flashcardResults', JSON.stringify(results));
+            
+            // Auto-save to CSV
+            saveResultsToCSV(result);
+            
             document.getElementById('finalScore').textContent = `${score}/${totalCards} (${percentage}%)`;
             document.getElementById('completion').style.display = 'block';
             
-            // Scroll to completion
             document.getElementById('completion').scrollIntoView({ behavior: 'smooth' });
         }
 
@@ -622,12 +962,414 @@
             }
         }
 
-        // Enter key support for answer input
+        // Create Page Functions
+        function toggleAnswerType() {
+            const answerType = document.getElementById('answerType').value;
+            const textGroup = document.getElementById('textAnswerGroup');
+            const imageGroup = document.getElementById('imageAnswerGroup');
+            
+            if (answerType === 'image') {
+                textGroup.classList.add('hidden');
+                imageGroup.classList.remove('hidden');
+            } else {
+                textGroup.classList.remove('hidden');
+                imageGroup.classList.add('hidden');
+            }
+        }
+
+        function addFlashcard() {
+            const question = document.getElementById('questionInput').value.trim();
+            const answerType = document.getElementById('answerType').value;
+            let answer = '';
+            
+            if (answerType === 'text') {
+                answer = document.getElementById('answerInput').value.trim();
+            } else {
+                answer = document.getElementById('imageUrlInput').value.trim();
+            }
+            
+            if (!question || !answer) {
+                alert('Please fill in both question and answer fields.');
+                return;
+            }
+            
+            const flashcard = {
+                question: question,
+                answer: answer
+            };
+            
+            if (answerType === 'image') {
+                flashcard.type = 'image';
+            }
+            
+            createdFlashcards.push(flashcard);
+            renderFlashcardsList();
+            clearForm();
+        }
+
+        function renderFlashcardsList() {
+            const container = document.getElementById('cardsContainer');
+            const cardCount = document.getElementById('cardCount');
+            
+            cardCount.textContent = createdFlashcards.length;
+            
+            if (createdFlashcards.length === 0) {
+                container.innerHTML = '<p style="color: #a0aec0; text-align: center;">No flashcards created yet.</p>';
+                return;
+            }
+            
+            container.innerHTML = createdFlashcards.map((card, index) => `
+                <div class="flashcard-item">
+                    <div class="flashcard-content">
+                        <div class="flashcard-question">${card.question}</div>
+                        <div class="flashcard-answer">
+                            ${card.type === 'image' ? `📷 ${card.answer}` : card.answer}
+                        </div>
+                    </div>
+                    <div class="flashcard-actions">
+                        <button class="btn btn-danger btn-small" onclick="deleteFlashcard(${index})">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function deleteFlashcard(index) {
+            createdFlashcards.splice(index, 1);
+            renderFlashcardsList();
+        }
+
+        function clearForm() {
+            document.getElementById('questionInput').value = '';
+            document.getElementById('answerInput').value = '';
+            document.getElementById('imageUrlInput').value = '';
+            document.getElementById('answerType').value = 'text';
+            toggleAnswerType();
+        }
+
+        function exportFlashcards() {
+            if (createdFlashcards.length === 0) {
+                alert('No flashcards to export. Create some flashcards first.');
+                return;
+            }
+            
+            const dataStr = JSON.stringify(createdFlashcards, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportFileDefaultName = 'flashcards.json';
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+        }
+
+        function clearAllCards() {
+            if (confirm('Are you sure you want to delete all created flashcards?')) {
+                createdFlashcards = [];
+                renderFlashcardsList();
+            }
+        }
+
+        // Results Page Functions
+        function loadResultsPage() {
+            updateStats();
+            renderResultsTable();
+            drawScoreChart();
+        }
+
+        function updateStats() {
+            const totalSessions = results.length;
+            const totalQuestions = results.reduce((sum, r) => sum + r.total, 0);
+            const averageScore = totalSessions > 0 ? 
+                Math.round(results.reduce((sum, r) => sum + r.percentage, 0) / totalSessions) : 0;
+            const bestScore = totalSessions > 0 ? 
+                Math.max(...results.map(r => r.percentage)) : 0;
+            
+            document.getElementById('totalSessions').textContent = totalSessions;
+            document.getElementById('totalQuestions').textContent = totalQuestions;
+            document.getElementById('averageScore').textContent = averageScore + '%';
+            document.getElementById('bestScore').textContent = bestScore + '%';
+        }
+
+        function renderResultsTable() {
+            const tbody = document.getElementById('resultsTableBody');
+            
+            if (results.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #a0aec0;">No results yet. Complete a study session to see data.</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = results.slice().reverse().map(result => {
+                const date = new Date(result.date).toLocaleDateString();
+                const duration = formatDuration(result.duration);
+                
+                return `
+                    <tr>
+                        <td>${date}</td>
+                        <td>${result.score}/${result.total}</td>
+                        <td>${result.total}</td>
+                        <td>${result.percentage}%</td>
+                        <td>${duration}</td>
+                        <td>
+                            <button class="btn btn-danger btn-small" onclick="deleteResult(${result.id})">Delete</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function formatDuration(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function deleteResult(id) {
+            results = results.filter(r => r.id !== id);
+            localStorage.setItem('flashcardResults', JSON.stringify(results));
+            loadResultsPage();
+        }
+
+        function clearAllResults() {
+            if (confirm('Are you sure you want to delete all results? This cannot be undone.')) {
+                results = [];
+                localStorage.setItem('flashcardResults', JSON.stringify(results));
+                loadResultsPage();
+            }
+        }
+
+        function saveResultsToCSV(newResult) {
+            // Create CSV content
+            const csvContent = formatResultAsCSV(newResult);
+            
+            // Create blob and download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', `flashcard_session_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function formatResultAsCSV(result) {
+            const headers = 'Date,Score,Total,Percentage,Duration_Seconds\n';
+            const row = `${new Date(result.date).toISOString()},${result.score},${result.total},${result.percentage},${result.duration}\n`;
+            return headers + row;
+        }
+
+        function exportResults() {
+            if (results.length === 0) {
+                alert('No results to export. Complete a study session first.');
+                return;
+            }
+            
+            // Create CSV content
+            const headers = 'Date,Score,Total,Percentage,Duration_Seconds\n';
+            const rows = results.map(result => 
+                `${new Date(result.date).toISOString()},${result.score},${result.total},${result.percentage},${result.duration}`
+            ).join('\n');
+            
+            const csvContent = headers + rows;
+            
+            // Create blob and download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', `flashcard_results_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function importResults() {
+            const file = document.getElementById('csvFile').files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const csv = e.target.result;
+                    const lines = csv.split('\n');
+                    const headers = lines[0].split(',');
+                    
+                    // Validate headers
+                    const expectedHeaders = ['Date', 'Score', 'Total', 'Percentage', 'Duration_Seconds'];
+                    const isValidFormat = expectedHeaders.every(header => headers.includes(header));
+                    
+                    if (!isValidFormat) {
+                        alert('Invalid CSV format. Please use exported CSV files from this app.');
+                        return;
+                    }
+                    
+                    // Parse data rows
+                    const importedResults = [];
+                    for (let i = 1; i < lines.length; i++) {
+                        const line = lines[i].trim();
+                        if (!line) continue;
+                        
+                        const values = line.split(',');
+                        if (values.length >= 5) {
+                            const result = {
+                                id: Date.now() + Math.random(), // Unique ID
+                                date: values[0],
+                                score: parseInt(values[1]),
+                                total: parseInt(values[2]),
+                                percentage: parseInt(values[3]),
+                                duration: parseInt(values[4])
+                            };
+                            importedResults.push(result);
+                        }
+                    }
+                    
+                    if (importedResults.length > 0) {
+                        // Ask user how to handle import
+                        const action = confirm(
+                            `Found ${importedResults.length} result(s) to import.\n\n` +
+                            'Click OK to ADD to existing results, or Cancel to REPLACE all results.'
+                        );
+                        
+                        if (action) {
+                            // Add to existing results
+                            results = [...results, ...importedResults];
+                        } else {
+                            // Replace all results
+                            results = importedResults;
+                        }
+                        
+                        localStorage.setItem('flashcardResults', JSON.stringify(results));
+                        loadResultsPage();
+                        alert(`Successfully imported ${importedResults.length} result(s)!`);
+                    } else {
+                        alert('No valid results found in the CSV file.');
+                    }
+                    
+                } catch (error) {
+                    alert('Error reading CSV file: ' + error.message);
+                }
+            };
+            
+            reader.readAsText(file);
+        }
+
+        function drawScoreChart() {
+            const canvas = document.getElementById('scoreChart');
+            const ctx = canvas.getContext('2d');
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if (results.length === 0) {
+                ctx.fillStyle = '#a0aec0';
+                ctx.font = '16px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('No data to display', canvas.width / 2, canvas.height / 2);
+                return;
+            }
+            
+            // Chart settings
+            const padding = 40;
+            const chartWidth = canvas.width - (padding * 2);
+            const chartHeight = canvas.height - (padding * 2);
+            
+            // Get data points
+            const dataPoints = results.slice(-10); // Last 10 results
+            const maxScore = 100;
+            const minScore = 0;
+            
+            // Draw axes
+            ctx.strokeStyle = '#718096';
+            ctx.lineWidth = 2;
+            
+            // Y-axis
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, padding + chartHeight);
+            ctx.stroke();
+            
+            // X-axis
+            ctx.beginPath();
+            ctx.moveTo(padding, padding + chartHeight);
+            ctx.lineTo(padding + chartWidth, padding + chartHeight);
+            ctx.stroke();
+            
+            // Draw grid lines and labels
+            ctx.strokeStyle = '#4a5568';
+            ctx.lineWidth = 1;
+            ctx.fillStyle = '#a0aec0';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'center';
+            
+            // Y-axis labels
+            for (let i = 0; i <= 5; i++) {
+                const y = padding + (chartHeight * i / 5);
+                const value = maxScore - (maxScore * i / 5);
+                
+                ctx.beginPath();
+                ctx.moveTo(padding - 5, y);
+                ctx.lineTo(padding + chartWidth, y);
+                ctx.stroke();
+                
+                ctx.textAlign = 'right';
+                ctx.fillText(value + '%', padding - 10, y + 4);
+            }
+            
+            if (dataPoints.length < 2) return;
+            
+            // Draw line
+            ctx.strokeStyle = '#4299e1';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            
+            dataPoints.forEach((point, index) => {
+                const x = padding + (chartWidth * index / (dataPoints.length - 1));
+                const y = padding + chartHeight - (chartHeight * point.percentage / 100);
+                
+                if (index === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            
+            ctx.stroke();
+            
+            // Draw data points
+            ctx.fillStyle = '#4299e1';
+            dataPoints.forEach((point, index) => {
+                const x = padding + (chartWidth * index / (dataPoints.length - 1));
+                const y = padding + chartHeight - (chartHeight * point.percentage / 100);
+                
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, 2 * Math.PI);
+                ctx.fill();
+            });
+        }
+
+        // Enter key support
         document.getElementById('answerInput').addEventListener('keypress', function(event) {
             if (event.key === 'Enter') {
                 checkAnswer();
             }
         });
+
+        document.getElementById('questionInput').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                document.getElementById('answerInput').focus();
+            }
+        });
+
+        // Initialize
+        renderFlashcardsList();
     </script>
 </body>
 </html>

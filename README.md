@@ -35,13 +35,12 @@ Notes:
 - A demo to the project can be found at: https://www.youtube.com/watch?v=6JitznnkUbk
 - The project was part of a college project. In retrospective, probably way too simplistic but an interesting proof of concept.
 
----
-
-
 ### 4. 🃏 FlashCard App
 
-A simple web-based flashcard app that takes in json files (with image display support) to create flashcards you can go through in random order. See math.json as an example.
+A simple web-based flashcard app that takes in json files (with image display support) to create flashcards you can go through in random order. You can create new flashcards through the interface and save score to see your data displayed on a graph.
 
 Notes:
 - The non-scoring mode has bugs
-- The scoring is sel-accountable, aka you answer if you got it right or not
+- The scoring is self-accountable, aka you answer if you got it right or not
+
+---

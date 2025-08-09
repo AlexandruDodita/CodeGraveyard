@@ -1,11 +1,27 @@
 [
     {
-    "question": "Cine a fost Traian Basescu?",
-    "answer": "Un om."
+    "question": "Criteriul in Alpha",
+    "answer": "images/criteriu_alpha.png",
+    "type": "image"
     },
     {
-    "question": "Criteriul lui Alpha",
-    "answer": "images/criteriu_alpha.png",
+    "question": "Criteriul in Lambda",
+    "answer": "images/criteriu_lambda.png",
+    "type": "image"
+    },
+    {
+    "question": "Criteriul de Comparatie",
+    "answer": "images/criteriu_de_comparatie.png",
+    "type": "image"
+    },
+    {
+    "question": "Criteriul lui Abel",
+    "answer": "images/criteriu_abel.png",
+    "type": "image"
+    },
+    {
+    "question": "Criteriul lui Dirichlet",
+    "answer": "images/criteriu_dirichlet.png",
     "type": "image"
     }
 ]
