@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flashcard App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #2d3748;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+            padding: 24px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            color: white;
+            font-size: 24px;
+            font-weight: 600;
+            margin: 0;
+        }
+        
+        .content {
+            padding: 24px;
+        }
+        
+        .file-section {
+            background: #4a5568;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 2px dashed #718096;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .file-section:hover {
+            border-color: #4299e1;
+            background: #2d3748;
+        }
+        
+        .file-input-label {
+            cursor: pointer;
+            display: block;
+            color: #e2e8f0;
+            font-weight: 500;
+        }
+        
+        .file-input-label:hover {
+            color: #4299e1;
+        }
+        
+        .format-info {
+            background: #1a202c;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #a0aec0;
+            border-left: 4px solid #4299e1;
+        }
+        
+        .settings {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 24px;
+            padding: 16px;
+            background: #4a5568;
+            border-radius: 12px;
+        }
+        
+        .settings label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #e2e8f0;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        
+        .settings input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #4299e1;
+        }
+        
+        .game-area {
+            display: none;
+        }
+        
+        .score-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #1a202c;
+            padding: 16px 24px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            border: 1px solid #4a5568;
+        }
+        
+        .score-item {
+            text-align: center;
+        }
+        
+        .score-label {
+            font-size: 12px;
+            color: #a0aec0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .score-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #4299e1;
+            margin-top: 4px;
+        }
+        
+        .flashcard {
+            background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+            border: 1px solid #4a5568;
+            border-radius: 16px;
+            padding: 48px 32px;
+            margin: 24px 0;
+            text-align: center;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            line-height: 1.6;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .flashcard:hover {
+            border-color: #4299e1;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(66, 153, 225, 0.1);
+        }
+        
+        .flashcard.showing-answer {
+            background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+            border-color: #4299e1;
+        }
+        
+        .click-hint {
+            position: absolute;
+            bottom: 16px;
+            right: 16px;
+            font-size: 12px;
+            color: #a0aec0;
+            opacity: 0.7;
+        }
+        
+        .answer-content {
+            width: 100%;
+        }
+        
+        .answer-image {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+        }
+        
+        .answer-section {
+            margin-top: 24px;
+        }
+        
+        .text-input-section {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        
+        .answer-input {
+            background: #1a202c;
+            border: 2px solid #4a5568;
+            border-radius: 8px;
+            padding: 12px 16px;
+            color: #e2e8f0;
+            font-size: 16px;
+            width: 300px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .answer-input:focus {
+            outline: none;
+            border-color: #4299e1;
+        }
+        
+        .answer-input::placeholder {
+            color: #a0aec0;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(66, 153, 225, 0.3);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+        }
+        
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(72, 187, 120, 0.3);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(245, 101, 101, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #4a5568;
+            color: #e2e8f0;
+            border: 1px solid #718096;
+        }
+        
+        .btn-secondary:hover {
+            background: #2d3748;
+            border-color: #a0aec0;
+        }
+        
+        .feedback {
+            margin-top: 20px;
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 600;
+            display: none;
+        }
+        
+        .feedback.correct {
+            background: #22543d;
+            color: #9ae6b4;
+            border: 2px solid #48bb78;
+        }
+        
+        .feedback.incorrect {
+            background: #742a2a;
+            color: #feb2b2;
+            border: 2px solid #f56565;
+        }
+        
+        .completion {
+            text-align: center;
+            padding: 48px 32px;
+            background: linear-gradient(135deg, #22543d 0%, #2f855a 100%);
+            border-radius: 16px;
+            margin: 24px 0;
+            display: none;
+        }
+        
+        .completion h2 {
+            color: #9ae6b4;
+            font-size: 28px;
+            margin-bottom: 16px;
+        }
+        
+        .completion p {
+            color: #c6f6d5;
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+            }
+            
+            .content {
+                padding: 16px;
+            }
+            
+            .flashcard {
+                padding: 32px 20px;
+                font-size: 16px;
+            }
+            
+            .buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🃏 Flashcard App</h1>
+        </div>
+        
+        <div class="content">
+            <div class="file-section">
+                <input type="file" id="jsonFile" accept=".json" style="display: none;">
+                <label for="jsonFile" class="file-input-label">
+                    📁 Click to Select JSON File
+                </label>
+                <div class="format-info">
+                    <strong>Expected formats:</strong><br>
+                    Text: [{"question": "What is 2+2?", "answer": "4"}, ...]<br>
+                    Images: [{"question": "What animal?", "answer": "dog.jpg", "type": "image"}, ...]
+                </div>
+            </div>
+            
+            <div class="settings">
+                <label>
+                    <input type="checkbox" id="scoringMode" checked>
+                    Enable Scoring Mode
+                </label>
+            </div>
+            
+            <div id="gameArea" class="game-area">
+                <div class="score-section">
+                    <div class="score-item">
+                        <div class="score-label">Score</div>
+                        <div class="score-value"><span id="score">0</span>/<span id="total">0</span></div>
+                    </div>
+                    <div class="score-item">
+                        <div class="score-label">Progress</div>
+                        <div class="score-value" id="progress">0%</div>
+                    </div>
+                    <div class="score-item">
+                        <div class="score-label">Remaining</div>
+                        <div class="score-value" id="remaining">0</div>
+                    </div>
+                </div>
+                
+                <div class="flashcard" id="flashcard" onclick="handleCardClick()">
+                    <div class="answer-content" id="cardContent">
+                        <!-- Question/Answer content -->
+                    </div>
+                    <div class="click-hint" id="clickHint">Click to reveal answer</div>
+                </div>
+                
+                <div class="answer-section">
+                    <div id="textInputSection" class="text-input-section hidden">
+                        <input type="text" id="answerInput" class="answer-input" placeholder="Enter your answer...">
+                        <button class="btn btn-primary" onclick="checkAnswer()">Submit</button>
+                    </div>
+                    
+                    <div class="buttons">
+                        <div id="scoringButtons" class="hidden">
+                            <button class="btn btn-success" onclick="markCorrect()">✅ Correct</button>
+                            <button class="btn btn-danger" onclick="markIncorrect()">❌ Wrong</button>
+                        </div>
+                        <button class="btn btn-secondary" onclick="nextCard()">Next Card</button>
+                    </div>
+                </div>
+                
+                <div id="feedback" class="feedback"></div>
+                
+                <div id="completion" class="completion">
+                    <h2>🎉 Completed!</h2>
+                    <p>You've finished all flashcards!</p>
+                    <p>Final Score: <span id="finalScore"></span></p>
+                    <br>
+                    <button class="btn btn-primary" onclick="restartGame()">Start Over</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let flashcards = [];
+        let currentCard = null;
+        let remainingCards = [];
+        let score = 0;
+        let totalCards = 0;
+        let showingAnswer = false;
+        let scoringMode = true;
+        let hasAnswered = false; // Prevent multiple scoring
+
+        document.getElementById('jsonFile').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        if (Array.isArray(data) && data.length > 0 && data[0].question && data[0].answer) {
+                            flashcards = data;
+                            scoringMode = document.getElementById('scoringMode').checked;
+                            initializeGame();
+                        } else {
+                            alert('Invalid JSON format. Please include question and answer fields.');
+                        }
+                    } catch (error) {
+                        alert('Error parsing JSON file: ' + error.message);
+                    }
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        function initializeGame() {
+            remainingCards = [...flashcards];
+            shuffleArray(remainingCards);
+            score = 0;
+            totalCards = flashcards.length;
+            
+            document.getElementById('gameArea').style.display = 'block';
+            document.getElementById('completion').style.display = 'none';
+            
+            showNextCard();
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function showNextCard() {
+            if (remainingCards.length === 0) {
+                showCompletion();
+                return;
+            }
+            
+            currentCard = remainingCards.pop();
+            showingAnswer = false;
+            hasAnswered = false;
+            
+            // Reset card appearance
+            const flashcard = document.getElementById('flashcard');
+            const cardContent = document.getElementById('cardContent');
+            const clickHint = document.getElementById('clickHint');
+            
+            flashcard.classList.remove('showing-answer');
+            cardContent.innerHTML = currentCard.question;
+            clickHint.style.display = 'block';
+            clickHint.textContent = 'Click to reveal answer';
+            
+            // Hide all answer sections initially
+            document.getElementById('textInputSection').classList.add('hidden');
+            document.getElementById('scoringButtons').classList.add('hidden');
+            document.getElementById('feedback').style.display = 'none';
+            document.getElementById('answerInput').value = '';
+            
+            updateScore();
+        }
+
+        function handleCardClick() {
+            if (!currentCard) return;
+            
+            if (!showingAnswer) {
+                showAnswer();
+            }
+        }
+
+        function showAnswer() {
+            if (!currentCard || showingAnswer) return;
+            
+            showingAnswer = true;
+            const flashcard = document.getElementById('flashcard');
+            const cardContent = document.getElementById('cardContent');
+            const clickHint = document.getElementById('clickHint');
+            
+            flashcard.classList.add('showing-answer');
+            clickHint.style.display = 'none';
+            
+            if (currentCard.type === 'image') {
+                cardContent.innerHTML = `<img src="${currentCard.answer}" alt="Answer" class="answer-image" />`;
+                if (scoringMode) {
+                    document.getElementById('scoringButtons').classList.remove('hidden');
+                }
+            } else {
+                cardContent.textContent = currentCard.answer;
+                if (scoringMode) {
+                    document.getElementById('scoringButtons').classList.remove('hidden');
+                } else {
+                    // For non-scoring mode with text, show input for practice
+                    document.getElementById('textInputSection').classList.remove('hidden');
+                }
+            }
+        }
+
+        function checkAnswer() {
+            if (!currentCard || !scoringMode || hasAnswered) return;
+            
+            hasAnswered = true;
+            const userAnswer = document.getElementById('answerInput').value.trim().toLowerCase();
+            const correctAnswer = currentCard.answer.toLowerCase();
+            const feedback = document.getElementById('feedback');
+            
+            if (userAnswer === correctAnswer) {
+                score++;
+                feedback.textContent = '✅ Correct!';
+                feedback.className = 'feedback correct';
+            } else {
+                feedback.textContent = `❌ Incorrect. The answer is: ${currentCard.answer}`;
+                feedback.className = 'feedback incorrect';
+            }
+            
+            feedback.style.display = 'block';
+            updateScore();
+            
+            setTimeout(() => {
+                nextCard();
+            }, 2000);
+        }
+
+        function markCorrect() {
+            if (!scoringMode || hasAnswered) return;
+            hasAnswered = true;
+            score++;
+            updateScore();
+            showFeedbackAndNext('✅ Marked as correct!', 'correct');
+        }
+
+        function markIncorrect() {
+            if (!scoringMode || hasAnswered) return;
+            hasAnswered = true;
+            showFeedbackAndNext('❌ Marked as incorrect', 'incorrect');
+        }
+
+        function showFeedbackAndNext(message, type) {
+            const feedback = document.getElementById('feedback');
+            feedback.textContent = message;
+            feedback.className = `feedback ${type}`;
+            feedback.style.display = 'block';
+            
+            setTimeout(() => {
+                nextCard();
+            }, 1500);
+        }
+
+        function nextCard() {
+            showNextCard();
+        }
+
+        function updateScore() {
+            const completed = totalCards - remainingCards.length;
+            const progress = totalCards > 0 ? Math.round((completed / totalCards) * 100) : 0;
+            
+            document.getElementById('score').textContent = score;
+            document.getElementById('total').textContent = totalCards;
+            document.getElementById('progress').textContent = progress + '%';
+            document.getElementById('remaining').textContent = remainingCards.length;
+        }
+
+        function showCompletion() {
+            const percentage = totalCards > 0 ? Math.round((score / totalCards) * 100) : 0;
+            document.getElementById('finalScore').textContent = `${score}/${totalCards} (${percentage}%)`;
+            document.getElementById('completion').style.display = 'block';
+            
+            // Scroll to completion
+            document.getElementById('completion').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function restartGame() {
+            if (flashcards.length > 0) {
+                initializeGame();
+            }
+        }
+
+        // Enter key support for answer input
+        document.getElementById('answerInput').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                checkAnswer();
+            }
+        });
+    </script>
+</body>
+</html>

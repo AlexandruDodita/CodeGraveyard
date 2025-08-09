@@ -32,8 +32,16 @@ Notes:
 An IoT-based digital safe system using Raspberry Pi Pico W that delivers 6-digit OTP codes via Bluetooth every 60 seconds for secure web-based unlocking. Features include servo-based locking, fallback offline mode, live status monitoring, and a mobile-friendly control panel.
 
 Notes:
-
 - A demo to the project can be found at: https://www.youtube.com/watch?v=6JitznnkUbk
 - The project was part of a college project. In retrospective, probably way too simplistic but an interesting proof of concept.
 
 ---
+
+
+### 4. 🃏 FlashCard App
+
+A simple web-based flashcard app that takes in json files (with image display support) to create flashcards you can go through in random order. See math.json as an example.
+
+Notes:
+- The non-scoring mode has bugs
+- The scoring is sel-accountable, aka you answer if you got it right or not
