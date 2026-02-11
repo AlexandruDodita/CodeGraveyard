@@ -405,12 +405,15 @@ def _scan_single_pdf(path_str: str, ocr: bool = False) -> tuple:
             return (path_str, cached_vins, cached_cats, None)
     try:
         doc = fitz.open(_long(path_str))
+        # VINs: scan all pages (VINs can appear anywhere)
         full_text = chr(12).join(
             _extract_page_text(page, i, ocr=ocr) for i, page in enumerate(doc)
         ).upper()
+        # Categories: first page only (later pages have unrelated references)
+        page1_text = _extract_page_text(doc[0], 0, ocr=ocr).upper() if len(doc) > 0 else ""
         doc.close()
         vins = {v for v in VIN_PATTERN.findall(full_text) if is_valid_vin(v)}
-        cats = _detect_content_categories(full_text)
+        cats = _detect_content_categories(page1_text)
         return (path_str, vins, cats, None)
     except Exception as e:
         return (path_str, set(), set(), e)
@@ -1184,17 +1187,17 @@ _CONTENT_CATEGORY_PATTERNS = {
         re.compile(r'Leasing\s+Opera[tț]ional', re.I),
     ],
     "Subcontract": [
-        re.compile(r'Subcontract', re.I),
+        re.compile(r'\bSubcontract\b', re.I),
         re.compile(r'Act\s+Adi[tț]ional', re.I),
     ],
     "CASCO": [
         re.compile(r'\bCASCO\b', re.I),
-        re.compile(r'FlexiCasco', re.I),
+        re.compile(r'\bFlexiCasco\b', re.I),
         re.compile(r'Poli[tț][aă]\s+DT\b', re.I),
     ],
     "RCA": [
         re.compile(r'\bRCA\b'),                        # uppercase only – avoid false positives
-        re.compile(r'R[aă]spundere\s+Civil[aă]', re.I),
+        re.compile(r'R[aă]spundere\s+Civil[aă]\b', re.I),
     ],
     "TALON / CIV": [
         re.compile(r'\bTALON\b', re.I),
@@ -1202,9 +1205,9 @@ _CONTENT_CATEGORY_PATTERNS = {
         re.compile(r'\bCIV\b'),
     ],
     "Facturi": [
-        re.compile(r'FACTUR[AĂ]', re.I),
-        re.compile(r'Factur[aă]\s+fiscal[aă]', re.I),
-        re.compile(r'Factur[aă]\s+proform[aă]', re.I),
+        re.compile(r'\bFACTUR[AĂ]\b', re.I),          # exact "factura/factură", not "facturile"
+        re.compile(r'\bFactur[aă]\s+fiscal[aă]\b', re.I),
+        re.compile(r'\bFactur[aă]\s+proform[aă]\b', re.I),
     ],
 }
 
@@ -1215,9 +1218,55 @@ _CONTENT_PRIORITY = ["Facturi", "TALON / CIV", "Contract Cadru", "Subcontract", 
 _reclass_cache: dict = {}
 
 
+def _count_content_matches(text: str) -> dict:
+    """Count how many times each category's patterns match in text.
+    Returns {category: match_count}."""
+    counts = {}
+    for cat, patterns in _CONTENT_CATEGORY_PATTERNS.items():
+        total = 0
+        for pat in patterns:
+            total += len(pat.findall(text))
+        if total > 0:
+            counts[cat] = total
+    return counts
+
+
+def _earliest_content_match(text: str) -> dict:
+    """Find the earliest position in text where each category matches.
+    Returns {category: earliest_char_position}."""
+    positions = {}
+    for cat, patterns in _CONTENT_CATEGORY_PATTERNS.items():
+        earliest = None
+        for pat in patterns:
+            m = pat.search(text)
+            if m and (earliest is None or m.start() < earliest):
+                earliest = m.start()
+        if earliest is not None:
+            positions[cat] = earliest
+    return positions
+
+
+def _best_content_category(text: str) -> Optional[str]:
+    """Determine the dominant category from PDF text content.
+    Uses first-match-by-position: the category whose keyword appears
+    earliest in the text wins, since documents typically identify
+    themselves in the title/header. Count is used as tiebreaker for
+    same-position matches."""
+    positions = _earliest_content_match(text)
+    if not positions:
+        return None
+    counts = _count_content_matches(text)
+    # Sort by (position, -count) — earliest position wins,
+    # on same position highest count breaks tie
+    best = min(positions.keys(),
+               key=lambda c: (positions[c], -counts.get(c, 0)))
+    return best
+
+
 def _scan_pdf_for_category(pdf_path: str, ocr: bool = False) -> Optional[str]:
-    """Open a PDF and determine its category from text content.
-    Returns the first matching category or None."""
+    """Open a PDF and determine its dominant category from text content.
+    Counts pattern matches per category — highest count wins.
+    Returns category name or None."""
     # Check test/cache first
     if pdf_path in _reclass_cache:
         return _reclass_cache[pdf_path]
@@ -1233,18 +1282,16 @@ def _scan_pdf_for_category(pdf_path: str, ocr: bool = False) -> Optional[str]:
         return None
     try:
         doc = fitz.open(_long(pdf_path))
-        text = chr(12).join(
-            _extract_page_text(page, i, ocr=ocr) for i, page in enumerate(doc)
-        )
+        # Only scan first page — later pages have unrelated references
+        if len(doc) > 0:
+            text = _extract_page_text(doc[0], 0, ocr=ocr)
+        else:
+            text = ""
         doc.close()
     except Exception:
         return None
 
-    for cat in _CONTENT_PRIORITY:
-        for pat in _CONTENT_CATEGORY_PATTERNS[cat]:
-            if pat.search(text):
-                return cat
-    return None
+    return _best_content_category(text)
 
 
 def reclassify_by_content(inventory: dict, output_root: Path, workers: int = 4,
@@ -2438,11 +2485,13 @@ def main():
     parser.add_argument("--inventory-only", action="store_true",
                         help="Skip all copying; just rebuild inventory Excel from existing output")
     parser.add_argument("--ocr", action="store_true",
-                        help="Enable OCR for image-only PDFs (requires pytesseract + Tesseract)")
+                        help="Standalone: scan Alte Documente PDFs in output with OCR "
+                             "and reclassify miscategorized files. Also enables OCR in "
+                             "--execute and --rescan flows.")
     parser.add_argument("--ocr-rescue", action="store_true",
-                        help="Enable high-accuracy OCR only for _NO_VIN rescue scans "
-                             "(DPI 300, 5 pages, skip OCR for content reclassification). "
-                             "Implies --ocr for rescue phase only.")
+                        help="Standalone: scan _NO_VIN folders in output with high-accuracy "
+                             "OCR (DPI 300, 5 pages) and rescue any found VINs. "
+                             "Operates on the output folder only.")
     parser.add_argument("--rescan", action="store_true",
                         help="Rescan existing output: rescue _NO_VIN folders via OCR, "
                              "re-apply renames, rebuild Excel. Use with --inventory-only.")
@@ -2450,6 +2499,74 @@ def main():
 
     root = Path(args.root)
     output_root = Path(args.output)
+
+    # ── OCR standalone modes (operate on output folder only) ────────────────
+    if (args.ocr or args.ocr_rescue) and not args.inventory_only and not args.execute:
+        if not output_root.exists():
+            print(f"ERROR: Output '{output_root}' does not exist.", file=sys.stderr)
+            sys.exit(1)
+        if not HAS_OCR:
+            print("ERROR: pytesseract not installed. pip install pytesseract Pillow",
+                  file=sys.stderr)
+            sys.exit(1)
+        if not HAS_PYMUPDF:
+            print("ERROR: PyMuPDF not installed. pip install pymupdf", file=sys.stderr)
+            sys.exit(1)
+
+        workers = args.workers or min(8, os.cpu_count() or 4)
+        _OCR_ENABLED = True
+
+        print(f"{'='*70}", file=sys.stderr)
+
+        if args.ocr_rescue:
+            # ── OCR Rescue: scan _NO_VIN with boosted settings ──────────────
+            _ocr_boost_rescue()
+            print(f"SIN Folder Reorganizer – OCR RESCUE (_NO_VIN only)", file=sys.stderr)
+            print(f"  Output:     {output_root}", file=sys.stderr)
+            print(f"  OCR:        RESCUE (DPI {_OCR_RESCUE_DPI}, "
+                  f"{_OCR_RESCUE_MAX_PAGES} pages, workers={workers})", file=sys.stderr)
+            print(f"{'='*70}\n", file=sys.stderr)
+
+            load_ocr_cache(output_root)
+            rescue_stats = rescan_rescue_no_vin(
+                output_root, workers=workers, ocr=True)
+            save_ocr_cache(output_root)
+            _ocr_restore()
+
+            print(f"\n  Done. Moved {rescue_stats.get('moved', 0)} files, "
+                  f"rescued {rescue_stats.get('rescued_folders', 0)} folders.",
+                  file=sys.stderr)
+
+        if args.ocr:
+            # ── OCR Reclassify: scan Alte Documente in output ───────────────
+            print(f"SIN Folder Reorganizer – OCR RECLASSIFY (Alte Documente)",
+                  file=sys.stderr)
+            print(f"  Output:     {output_root}", file=sys.stderr)
+            print(f"  OCR:        ON (DPI {_OCR_DPI}, "
+                  f"{_OCR_MAX_PAGES} pages, workers={workers})", file=sys.stderr)
+            print(f"{'='*70}\n", file=sys.stderr)
+
+            load_ocr_cache(output_root)
+            print(f"  Building inventory from output...", file=sys.stderr)
+            inventory = build_inventory(output_root)
+            print(f"  Inventory: {len(inventory)} VINs", file=sys.stderr)
+
+            print(f"  Checking Alte Documente PDFs for miscategorized documents...",
+                  file=sys.stderr)
+            reclass_stats = reclassify_by_content(
+                inventory, output_root, workers, ocr=True, rename_on_disk=True)
+            if reclass_stats.get("reclassified", 0):
+                print(f"  Reclassified: {reclass_stats['reclassified']} PDFs "
+                      f"(scanned {reclass_stats['scanned']} across "
+                      f"{reclass_stats['vins_checked']} VINs) — renamed on disk",
+                      file=sys.stderr)
+            else:
+                print(f"  No reclassifications needed "
+                      f"(scanned {reclass_stats.get('scanned', 0)} PDFs).",
+                      file=sys.stderr)
+            save_ocr_cache(output_root)
+
+        return
 
     # ── Inventory-only / Rescan mode ────────────────────────────────────────
     if args.inventory_only:
@@ -2591,9 +2708,8 @@ def main():
         print("Falling back to filename-only VIN detection.\n", file=sys.stderr)
         scan_pdf = False
 
-    _OCR_ENABLED = (args.ocr or args.ocr_rescue) and HAS_OCR
-    ocr_rescue_only = args.ocr_rescue and HAS_OCR
-    if (args.ocr or args.ocr_rescue) and not HAS_OCR:
+    _OCR_ENABLED = args.ocr and HAS_OCR
+    if args.ocr and not HAS_OCR:
         print("pytesseract not installed. pip install pytesseract Pillow", file=sys.stderr)
         print("OCR disabled.\n", file=sys.stderr)
 
@@ -2611,10 +2727,7 @@ def main():
     print(f"  Mode:       {mode}", file=sys.stderr)
     print(f"  PDF scan:   {'ON' if scan_pdf else 'OFF'}"
           + (f"  (workers={workers})" if scan_pdf else ""), file=sys.stderr)
-    if ocr_rescue_only:
-        print(f"  OCR:        RESCUE ONLY (no effect in --execute, use with --rescan)",
-              file=sys.stderr)
-    elif _OCR_ENABLED:
+    if _OCR_ENABLED:
         print(f"  OCR:        ON (pytesseract, post-copy phases only, "
               f"first {_OCR_MAX_PAGES} pages, 30s timeout)",
               file=sys.stderr)
@@ -2737,20 +2850,18 @@ def main():
             save_rename_map(output_root, original_names)
 
         # Phase 5: Content-based reclassification of Alte Documente
-        # --ocr-rescue: skip OCR here (only for _NO_VIN rescue)
-        ocr_for_reclass = _OCR_ENABLED and not ocr_rescue_only
         reclass_stats = {}
         if scan_pdf and not args.no_content_scan:
-            if ocr_for_reclass:
+            if _OCR_ENABLED:
                 load_ocr_cache(output_root)
             print(f"  Checking Alte Documente PDFs for miscategorized documents...")
             reclass_stats = reclassify_by_content(
-                inventory, output_root, workers, ocr=ocr_for_reclass)
+                inventory, output_root, workers, ocr=_OCR_ENABLED)
             if reclass_stats.get("reclassified", 0):
                 print(f"  Reclassified: {reclass_stats['reclassified']} PDFs "
                       f"(scanned {reclass_stats['scanned']} across "
                       f"{reclass_stats['vins_checked']} VINs)")
-            if ocr_for_reclass:
+            if _OCR_ENABLED:
                 save_ocr_cache(output_root)
 
         write_inventory_excel(excel_path, inventory)

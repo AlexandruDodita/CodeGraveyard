@@ -1649,6 +1649,92 @@ def test_ledger_based_inventory():
         shutil.rmtree(tmpdir, ignore_errors=True)
 
 
+def test_content_category_dominance():
+    """Test that first-position-in-text wins over count or fixed priority."""
+    print("\n=== Content Category: First Position Wins ===")
+
+    # Contract Cadru appears first, even though "factura" appears more times
+    text1 = "CONTRACT CADRU nr. 12345\nClauze contractuale\nFactura atasata\nFactura nr 1\nFactura nr 2"
+    result1 = rs._best_content_category(text1)
+    check("contract first despite 3x factura later", result1 == "Contract Cadru")
+
+    # Factura appears first → should win even if contract appears later
+    text2 = "FACTURA FISCALA nr 999\nDetalii factura\nContract Cadru referinta"
+    result2 = rs._best_content_category(text2)
+    check("factura first wins over contract later", result2 == "Facturi")
+
+    # Subcontract first, CASCO mentioned many times later
+    text3 = "SUBCONTRACT nr 55\nTermeni\nCASCO polita\nCASCO plata\nCASCO acoperire\nCASCO detalii"
+    result3 = rs._best_content_category(text3)
+    check("subcontract first despite 4x casco later", result3 == "Subcontract")
+
+    # CASCO first
+    text4 = "POLITA CASCO nr 123\nDetalii\nContract Cadru mentionat\nSubcontract referinta"
+    result4 = rs._best_content_category(text4)
+    check("casco first wins over contract+subcontract", result4 == "CASCO")
+
+    # RCA first
+    text5 = "POLITA RCA auto\nRaspundere Civila\nFactura atasata\nContract Cadru ref"
+    result5 = rs._best_content_category(text5)
+    check("rca first wins over factura+contract", result5 == "RCA")
+
+    # TALON first
+    text6 = "TALON auto vehicul\nDetalii\nCASCO polita\nRCA polita\nFactura"
+    result6 = rs._best_content_category(text6)
+    check("talon first wins over casco+rca+factura", result6 == "TALON / CIV")
+
+    # CIV first
+    text7 = "Certificat de Inmatriculare vehicul\nContract Cadru\nSubcontract"
+    result7 = rs._best_content_category(text7)
+    check("CIV first wins over contract+subcontract", result7 == "TALON / CIV")
+
+    # Single category only
+    text8 = "Detalii diverse\nCASCO polita de asigurare"
+    result8 = rs._best_content_category(text8)
+    check("single category match", result8 == "CASCO")
+
+    # No match at all
+    text9 = "Lorem ipsum dolor sit amet"
+    result9 = rs._best_content_category(text9)
+    check("no match returns None", result9 is None)
+
+    # Empty text
+    result10 = rs._best_content_category("")
+    check("empty text returns None", result10 is None)
+
+
+def test_content_first_position_wins():
+    """Exhaustive pairwise test: for every pair of categories, verify
+    that whichever appears first in the text is the one selected."""
+    print("\n=== Content Category: Pairwise First-Position ===")
+
+    # Representative keyword for each category
+    cat_keywords = {
+        "Contract Cadru": "Contract Cadru",
+        "Subcontract": "Subcontract",
+        "CASCO": "CASCO",
+        "RCA": "RCA",
+        "TALON / CIV": "TALON",
+        "Facturi": "FACTURA",
+    }
+
+    cats = list(cat_keywords.keys())
+    for i, cat_a in enumerate(cats):
+        for cat_b in cats[i+1:]:
+            kw_a = cat_keywords[cat_a]
+            kw_b = cat_keywords[cat_b]
+
+            # cat_a first
+            text_a_first = f"{kw_a} document\nAlte detalii\n{kw_b} referinta"
+            result = rs._best_content_category(text_a_first)
+            check(f"{cat_a} before {cat_b} → {cat_a}", result == cat_a)
+
+            # cat_b first
+            text_b_first = f"{kw_b} document\nAlte detalii\n{kw_a} referinta"
+            result = rs._best_content_category(text_b_first)
+            check(f"{cat_b} before {cat_a} → {cat_b}", result == cat_b)
+
+
 if __name__ == "__main__":
     test_vin_helpers()
     test_categorization()
@@ -1673,6 +1759,8 @@ if __name__ == "__main__":
     test_rename_map_persistence()
     test_short_name_categorization()
     test_ledger_based_inventory()
+    test_content_category_dominance()
+    test_content_first_position_wins()
 
     print(f"\n{'='*60}")
     print(f"RESULTS: {PASS} passed, {FAIL} failed")
