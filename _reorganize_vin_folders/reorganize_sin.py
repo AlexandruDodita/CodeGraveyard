@@ -310,6 +310,38 @@ _OCR_MIN_TEXT = 50     # chars of alphanumeric text below which we try OCR
 _OCR_MAX_PAGES = 2     # only OCR first N pages per PDF (VINs are on page 1-2)
 _OCR_TESS_CONFIG = '--oem 1 --psm 6'  # LSTM-only, assume uniform text block
 
+# High-accuracy settings for --ocr-rescue
+_OCR_RESCUE_DPI = 300
+_OCR_RESCUE_MAX_PAGES = 5
+_OCR_RESCUE_TESS_CONFIG = '--oem 1 --psm 3'  # fully automatic page segmentation
+
+_ocr_saved_settings = {}
+
+def _ocr_boost_rescue():
+    """Temporarily boost OCR settings for high-accuracy _NO_VIN rescue."""
+    global _OCR_DPI, _OCR_MAX_PAGES, _OCR_TESS_CONFIG, _ocr_saved_settings
+    _ocr_saved_settings = {
+        "dpi": _OCR_DPI, "max_pages": _OCR_MAX_PAGES, "config": _OCR_TESS_CONFIG
+    }
+    _OCR_DPI = _OCR_RESCUE_DPI
+    _OCR_MAX_PAGES = _OCR_RESCUE_MAX_PAGES
+    _OCR_TESS_CONFIG = _OCR_RESCUE_TESS_CONFIG
+
+def _ocr_restore():
+    """Restore OCR settings after rescue phase."""
+    global _OCR_DPI, _OCR_MAX_PAGES, _OCR_TESS_CONFIG
+    if _ocr_saved_settings:
+        _OCR_DPI = _ocr_saved_settings["dpi"]
+        _OCR_MAX_PAGES = _ocr_saved_settings["max_pages"]
+        _OCR_TESS_CONFIG = _ocr_saved_settings["config"]
+
+def _ocr_pool_init(dpi, max_pages, tess_config):
+    """Initializer for ProcessPoolExecutor workers — propagates OCR settings."""
+    global _OCR_DPI, _OCR_MAX_PAGES, _OCR_TESS_CONFIG
+    _OCR_DPI = dpi
+    _OCR_MAX_PAGES = max_pages
+    _OCR_TESS_CONFIG = tess_config
+
 def _ocr_page(page) -> str:
     """Render a PyMuPDF page to grayscale image and OCR it with pytesseract."""
     if not HAS_OCR or not HAS_PYMUPDF:
@@ -778,32 +810,42 @@ def categorize_file(fn: str) -> str:
 def build_inventory(output_root: Path, range_start: int = 0, range_end: int = 0,
                     original_names: dict = None) -> dict:
     """Scan output directory: {VIN: {partition, files: {category: [filenames]}}}
-    If original_names is provided, uses original filenames for categorization
-    and display in Excel. original_names maps (vin, renamed_fn) → original_fn."""
+    If original_names is provided, uses original filenames for display in Excel.
+    original_names maps (vin, renamed_fn) → original_fn.
+    Scans ALL subdirectories for VIN folders — output partition names may differ
+    from source names (e.g. 'sin_alpha' vs 'SINDICALIZARE ALPHA FINAL')."""
     inventory = {}
-    for part_dir in sorted(output_root.iterdir()):
-        if not part_dir.is_dir(): continue
-        if not (part_dir.name.upper().startswith("SINDICALIZARE") or
-                part_dir.name.upper().startswith("SINICALIZARE")):
+
+    try:
+        top_entries = sorted(output_root.iterdir())
+    except OSError as exc:
+        print(f"  WARNING: Cannot list output directory '{output_root}': {exc}",
+              file=sys.stderr)
+        return inventory
+
+    part_dirs = [d for d in top_entries if d.is_dir()]
+    for part_dir in part_dirs:
+        dname = part_dir.name
+        # Skip hidden/special dirs and files with extensions
+        if dname.startswith(("_", ".")) or "." in dname:
             continue
         try:
             for vin_dir in sorted(part_dir.iterdir()):
-                if not vin_dir.is_dir() or not is_vin(vin_dir.name): continue
+                if not vin_dir.is_dir() or not is_vin(vin_dir.name):
+                    continue
                 vin = vin_dir.name
                 if vin not in inventory:
                     inventory[vin] = {
-                        "_partition": merge_partition_name(part_dir.name),
-                        "_actual_partition": part_dir.name,
+                        "_partition": dname,
+                        "_actual_partition": dname,
                         "_files": defaultdict(list),
                     }
                 for f in vin_dir.rglob('*'):
                     if f.is_file():
-                        # Categorize by ACTUAL filename (short names are recognized)
                         cat = categorize_file(f.name)
                         if cat is None:
-                            continue  # ignored file (desktop.ini etc.)
+                            continue
                         rel = f.relative_to(vin_dir)
-                        # For Excel display: use original name if available
                         display_name = f.name
                         if original_names:
                             display_name = original_names.get((vin, f.name), f.name)
@@ -812,6 +854,67 @@ def build_inventory(output_root: Path, range_start: int = 0, range_end: int = 0,
                         inventory[vin]["_files"][cat].append(display_rel)
         except PermissionError:
             pass
+    return inventory
+
+
+def build_inventory_from_ledger(ledger, output_root: Path,
+                                original_names: dict = None) -> dict:
+    """Build inventory purely from the planning ledger.
+    The ledger has VIN, partition, and filename data from the source scan.
+    No output directory checks needed — the planning step already determined
+    what goes where."""
+    inventory = {}
+
+    for change in ledger.changes:
+        if change.action != "copy_file":
+            continue
+        vin = change.vin
+        if not vin or not is_vin(vin):
+            continue
+        dest = Path(change.destination)
+
+        # Extract partition name from destination path
+        try:
+            rel = dest.relative_to(output_root)
+        except ValueError:
+            continue
+        parts = rel.parts
+        if len(parts) < 2:
+            continue
+        partition_name = parts[0]
+
+        if vin not in inventory:
+            inventory[vin] = {
+                "_partition": partition_name,
+                "_actual_partition": partition_name,
+                "_files": defaultdict(list),
+            }
+
+        # The planned destination filename (after rename if applicable)
+        actual_fn = dest.name
+        cat = categorize_file(actual_fn)
+        if cat is None:
+            continue
+
+        # Display name: use original name if available
+        display_name = actual_fn
+        if original_names:
+            display_name = original_names.get((vin, actual_fn), actual_fn)
+
+        # Preserve subdir structure (e.g. contracte/cc.pdf)
+        vin_base = output_root / partition_name / vin
+        try:
+            file_rel = dest.relative_to(vin_base)
+        except ValueError:
+            file_rel = Path(actual_fn)
+        if file_rel.parent != Path('.'):
+            display_rel = str(file_rel.parent / display_name)
+        else:
+            display_rel = display_name
+
+        if display_rel not in inventory[vin]["_files"][cat]:
+            inventory[vin]["_files"][cat].append(display_rel)
+
     return inventory
 
 
@@ -1144,7 +1247,10 @@ def reclassify_by_content(inventory: dict, output_root: Path, workers: int = 4,
         timeout = PDF_TIMEOUT if use_ocr else 120
         if workers > 1:
             try:
-                with concurrent.futures.ProcessPoolExecutor(max_workers=workers) as pool:
+                with concurrent.futures.ProcessPoolExecutor(
+                        max_workers=workers,
+                        initializer=_ocr_pool_init,
+                        initargs=(_OCR_DPI, _OCR_MAX_PAGES, _OCR_TESS_CONFIG)) as pool:
                     futs = {pool.submit(_scan_pdf_for_category, t[2], use_ocr): t
                             for t in tasks}
                     for f in concurrent.futures.as_completed(futs):
@@ -1907,7 +2013,10 @@ def rescan_rescue_no_vin(output_root: Path, workers: int = 4, ocr: bool = False)
     if text_tasks:
         if workers > 1:
             try:
-                with concurrent.futures.ProcessPoolExecutor(max_workers=workers) as pool:
+                with concurrent.futures.ProcessPoolExecutor(
+                        max_workers=workers,
+                        initializer=_ocr_pool_init,
+                        initargs=(_OCR_DPI, _OCR_MAX_PAGES, _OCR_TESS_CONFIG)) as pool:
                     futs = {pool.submit(_scan_pdf_full, t[0], False): t
                             for t in text_tasks}
                     for f in concurrent.futures.as_completed(futs):
@@ -1938,7 +2047,10 @@ def rescan_rescue_no_vin(output_root: Path, workers: int = 4, ocr: bool = False)
     if ocr_tasks:
         if workers > 1:
             try:
-                with concurrent.futures.ProcessPoolExecutor(max_workers=workers) as pool:
+                with concurrent.futures.ProcessPoolExecutor(
+                        max_workers=workers,
+                        initializer=_ocr_pool_init,
+                        initargs=(_OCR_DPI, _OCR_MAX_PAGES, _OCR_TESS_CONFIG)) as pool:
                     futs = {pool.submit(_scan_pdf_full, t[0], True): t
                             for t in ocr_tasks}
                     for f in concurrent.futures.as_completed(futs):
@@ -2214,6 +2326,10 @@ def main():
                         help="Skip all copying; just rebuild inventory Excel from existing output")
     parser.add_argument("--ocr", action="store_true",
                         help="Enable OCR for image-only PDFs (requires pytesseract + Tesseract)")
+    parser.add_argument("--ocr-rescue", action="store_true",
+                        help="Enable high-accuracy OCR only for _NO_VIN rescue scans "
+                             "(DPI 300, 5 pages, skip OCR for content reclassification). "
+                             "Implies --ocr for rescue phase only.")
     parser.add_argument("--rescan", action="store_true",
                         help="Rescan existing output: rescue _NO_VIN folders via OCR, "
                              "re-apply renames, rebuild Excel. Use with --inventory-only.")
@@ -2232,9 +2348,13 @@ def main():
             sys.exit(1)
 
         workers = args.workers or min(8, os.cpu_count() or 4)
-        _OCR_ENABLED = args.ocr and HAS_OCR
-        if args.ocr and not HAS_OCR:
+        ocr_rescue_only = args.ocr_rescue and HAS_OCR
+        _OCR_ENABLED = (args.ocr or args.ocr_rescue) and HAS_OCR
+        if (args.ocr or args.ocr_rescue) and not HAS_OCR:
             print("pytesseract not installed. pip install pytesseract Pillow", file=sys.stderr)
+        # --ocr-rescue: OCR only for rescue phase, not reclassification
+        ocr_for_rescue = _OCR_ENABLED
+        ocr_for_reclass = args.ocr and HAS_OCR and not ocr_rescue_only
         do_rescan = args.rescan
         excel_path = Path(args.excel) if args.excel else output_root / "inventory.xlsx"
 
@@ -2254,7 +2374,10 @@ def main():
         print(f"  Excel:      {excel_path}", file=sys.stderr)
         print(f"  PDF scan:   {'ON' if scan_pdf else 'OFF'}"
               + (f"  (workers={workers})" if scan_pdf else ""), file=sys.stderr)
-        if _OCR_ENABLED:
+        if ocr_rescue_only:
+            print(f"  OCR:        RESCUE ONLY (DPI {_OCR_RESCUE_DPI}, "
+                  f"{_OCR_RESCUE_MAX_PAGES} pages, workers={workers})", file=sys.stderr)
+        elif _OCR_ENABLED:
             print(f"  OCR:        ON (pytesseract, first {_OCR_MAX_PAGES} pages, "
                   f"workers={workers})", file=sys.stderr)
         print(f"  Partitions: {len(selected)}/{len(all_partitions)}"
@@ -2291,20 +2414,26 @@ def main():
 
         # ── Phase 2: Rescan operations (optional) ────────────────────────
         if do_rescan:
-            if _OCR_ENABLED:
+            if ocr_for_rescue:
                 load_ocr_cache(output_root)
+                if ocr_rescue_only:
+                    _ocr_boost_rescue()
 
             rescue_stats = rescan_rescue_no_vin(
-                output_root, workers=workers, ocr=_OCR_ENABLED)
+                output_root, workers=workers, ocr=ocr_for_rescue)
 
-            # Build a temp inventory for content reclassification
+            if ocr_rescue_only:
+                _ocr_restore()
+
+            # Build inventory from actual output for content reclassification
+            # (needs real disk paths, not ledger's planned paths)
             print(f"  Building inventory for content reclassification...")
             tmp_inv = build_inventory(output_root)
 
             if not args.no_content_scan and scan_pdf:
                 print(f"  Checking Alte Documente PDFs for miscategorized documents...")
                 reclass_stats = reclassify_by_content(
-                    tmp_inv, output_root, workers, ocr=_OCR_ENABLED,
+                    tmp_inv, output_root, workers, ocr=ocr_for_reclass,
                     rename_on_disk=True)
                 if reclass_stats.get("reclassified", 0):
                     print(f"  Reclassified: {reclass_stats['reclassified']} PDFs "
@@ -2319,29 +2448,20 @@ def main():
                     original_names[k] = v
             save_rename_map(output_root, original_names)
 
-            if _OCR_ENABLED:
+            if ocr_for_rescue:
                 save_ocr_cache(output_root)
 
         # ── Phase 3: Build final inventory + write Excel ─────────────────
-        # Load full rename map (covers all prior runs too)
+        # Build purely from ledger — it has original filenames + partition names
         rename_map = load_rename_map(output_root)
-        print(f"\n  Building final inventory from output directory...")
-        inventory = build_inventory(output_root, original_names=rename_map or None)
+        all_orig = rename_map or {}
+        if original_names:
+            all_orig.update(original_names)
 
-        # Content reclassification for non-rescan (Excel-only, no disk renames)
-        if not do_rescan and not args.no_content_scan and scan_pdf:
-            if _OCR_ENABLED:
-                load_ocr_cache(output_root)
-            print(f"  Checking Alte Documente PDFs for miscategorized documents...")
-            reclass_stats = reclassify_by_content(
-                inventory, output_root, workers, ocr=_OCR_ENABLED,
-                rename_on_disk=False)
-            if reclass_stats.get("reclassified", 0):
-                print(f"  Reclassified: {reclass_stats['reclassified']} PDFs "
-                      f"(scanned {reclass_stats['scanned']} across "
-                      f"{reclass_stats['vins_checked']} VINs) — Excel only")
-            if _OCR_ENABLED:
-                save_ocr_cache(output_root)
+        print(f"  Building inventory from planning ledger...", file=sys.stderr)
+        inventory = build_inventory_from_ledger(
+            ledger, output_root, original_names=all_orig or None)
+        print(f"  Inventory: {len(inventory)} VINs", file=sys.stderr)
 
         write_inventory_excel(excel_path, inventory)
         print(f"\n  Done. Excel written to {excel_path}", file=sys.stderr)
@@ -2357,8 +2477,9 @@ def main():
         print("Falling back to filename-only VIN detection.\n", file=sys.stderr)
         scan_pdf = False
 
-    _OCR_ENABLED = args.ocr and HAS_OCR
-    if args.ocr and not HAS_OCR:
+    _OCR_ENABLED = (args.ocr or args.ocr_rescue) and HAS_OCR
+    ocr_rescue_only = args.ocr_rescue and HAS_OCR
+    if (args.ocr or args.ocr_rescue) and not HAS_OCR:
         print("pytesseract not installed. pip install pytesseract Pillow", file=sys.stderr)
         print("OCR disabled.\n", file=sys.stderr)
 
@@ -2376,7 +2497,10 @@ def main():
     print(f"  Mode:       {mode}", file=sys.stderr)
     print(f"  PDF scan:   {'ON' if scan_pdf else 'OFF'}"
           + (f"  (workers={workers})" if scan_pdf else ""), file=sys.stderr)
-    if _OCR_ENABLED:
+    if ocr_rescue_only:
+        print(f"  OCR:        RESCUE ONLY (no effect in --execute, use with --rescan)",
+              file=sys.stderr)
+    elif _OCR_ENABLED:
         print(f"  OCR:        ON (pytesseract, post-copy phases only, "
               f"first {_OCR_MAX_PAGES} pages, 30s timeout)",
               file=sys.stderr)
@@ -2478,26 +2602,41 @@ def main():
 
         # Build and write inventory Excel
         excel_path = Path(args.excel) if args.excel else output_root / "inventory.xlsx"
-        print(f"\n  Building inventory from output directory...")
-        inventory = build_inventory(output_root, original_names=original_names or None)
+        print(f"\n  Building inventory...")
+        # Primary: from ledger (has original names, guaranteed correct)
+        inventory = build_inventory_from_ledger(
+            ledger, output_root, original_names=original_names or None)
+        # Supplement: directory scan catches any extras
+        dir_inv = build_inventory(output_root, original_names=original_names or None)
+        for vin, data in dir_inv.items():
+            if vin not in inventory:
+                inventory[vin] = data
+            else:
+                for cat, files in data["_files"].items():
+                    existing = set(inventory[vin]["_files"].get(cat, []))
+                    for f in files:
+                        if f not in existing:
+                            inventory[vin]["_files"][cat].append(f)
 
         # Persist rename map for future --inventory-only runs
         if original_names:
             save_rename_map(output_root, original_names)
 
         # Phase 5: Content-based reclassification of Alte Documente
+        # --ocr-rescue: skip OCR here (only for _NO_VIN rescue)
+        ocr_for_reclass = _OCR_ENABLED and not ocr_rescue_only
         reclass_stats = {}
         if scan_pdf and not args.no_content_scan:
-            if _OCR_ENABLED:
+            if ocr_for_reclass:
                 load_ocr_cache(output_root)
             print(f"  Checking Alte Documente PDFs for miscategorized documents...")
             reclass_stats = reclassify_by_content(
-                inventory, output_root, workers, ocr=_OCR_ENABLED)
+                inventory, output_root, workers, ocr=ocr_for_reclass)
             if reclass_stats.get("reclassified", 0):
                 print(f"  Reclassified: {reclass_stats['reclassified']} PDFs "
                       f"(scanned {reclass_stats['scanned']} across "
                       f"{reclass_stats['vins_checked']} VINs)")
-            if _OCR_ENABLED:
+            if ocr_for_reclass:
                 save_ocr_cache(output_root)
 
         write_inventory_excel(excel_path, inventory)

@@ -1562,6 +1562,93 @@ def test_short_name_categorization():
         shutil.rmtree(tmpdir, ignore_errors=True)
 
 
+def test_ledger_based_inventory():
+    """Test build_inventory_from_ledger builds correct inventory from planned changes."""
+    print("\n=== Ledger-Based Inventory ===")
+
+    # Also test OCR boost/restore
+    old_dpi = rs._OCR_DPI
+    old_pages = rs._OCR_MAX_PAGES
+    old_config = rs._OCR_TESS_CONFIG
+    rs._ocr_boost_rescue()
+    check("ocr boost: DPI raised", rs._OCR_DPI == rs._OCR_RESCUE_DPI)
+    check("ocr boost: max pages raised", rs._OCR_MAX_PAGES == rs._OCR_RESCUE_MAX_PAGES)
+    check("ocr boost: config changed", rs._OCR_TESS_CONFIG == rs._OCR_RESCUE_TESS_CONFIG)
+    rs._ocr_restore()
+    check("ocr restore: DPI", rs._OCR_DPI == old_dpi)
+    check("ocr restore: max pages", rs._OCR_MAX_PAGES == old_pages)
+    check("ocr restore: config", rs._OCR_TESS_CONFIG == old_config)
+    tmpdir = Path(tempfile.mkdtemp())
+    try:
+        out = tmpdir / "OUT"
+        part = out / "SINDICALIZARE TEST FINAL"
+        vin1_dir = part / "WVWZZZ3CZWE000001"
+        vin2_dir = part / "WVWZZZ3CZWE000002"
+
+        # Create actual output files
+        for d in [vin1_dir / "contracte", vin2_dir]:
+            os.makedirs(str(d), exist_ok=True)
+
+        (vin1_dir / "contracte" / "cc.pdf").write_bytes(b"contract")
+        (vin1_dir / "fl.pdf").write_bytes(b"fl data")
+        (vin1_dir / "some_random.pdf").write_bytes(b"other")
+        (vin2_dir / "rca.pdf").write_bytes(b"rca data")
+
+        # Build a ledger simulating scan_and_plan
+        ledger = rs.Ledger()
+        ledger.add("copy_file",
+                    str(tmpdir / "SRC" / "orig_contract.pdf"),
+                    str(vin1_dir / "contracte" / "cc.pdf"),
+                    vin="WVWZZZ3CZWE000001")
+        ledger.add("copy_file",
+                    str(tmpdir / "SRC" / "FL - CAR.pdf"),
+                    str(vin1_dir / "fl.pdf"),
+                    vin="WVWZZZ3CZWE000001")
+        ledger.add("copy_file",
+                    str(tmpdir / "SRC" / "random_doc.pdf"),
+                    str(vin1_dir / "some_random.pdf"),
+                    vin="WVWZZZ3CZWE000001")
+        ledger.add("copy_file",
+                    str(tmpdir / "SRC" / "polita_rca.pdf"),
+                    str(vin2_dir / "rca.pdf"),
+                    vin="WVWZZZ3CZWE000002")
+        # File that doesn't exist (wasn't copied)
+        ledger.add("copy_file",
+                    str(tmpdir / "SRC" / "missing.pdf"),
+                    str(vin2_dir / "op.pdf"),
+                    vin="WVWZZZ3CZWE000002")
+
+        orig_names = {
+            ("WVWZZZ3CZWE000001", "cc.pdf"): "CONTRACT_CADRU_ALPHA.pdf",
+            ("WVWZZZ3CZWE000001", "fl.pdf"): "FL - CAR - WVWZZZ3CZWE000001.pdf",
+        }
+        inv = rs.build_inventory_from_ledger(ledger, out, original_names=orig_names)
+
+        check("ledger inv: 2 VINs", len(inv) == 2, f"got {len(inv)}")
+        check("ledger inv: VIN1 present", "WVWZZZ3CZWE000001" in inv)
+        check("ledger inv: VIN2 present", "WVWZZZ3CZWE000002" in inv)
+
+        files1 = inv["WVWZZZ3CZWE000001"]["_files"]
+        cc_files = files1.get("Contract Cadru", [])
+        check("ledger inv: cc in Contract Cadru", len(cc_files) == 1, f"got {cc_files}")
+        check("ledger inv: cc shows original name",
+              any("CONTRACT_CADRU_ALPHA.pdf" in f for f in cc_files), f"got {cc_files}")
+        fl_files = files1.get("Formular de Livrare (FL)", [])
+        check("ledger inv: fl present", len(fl_files) == 1, f"got {fl_files}")
+
+        files2 = inv["WVWZZZ3CZWE000002"]["_files"]
+        check("ledger inv: rca in RCA", len(files2.get("RCA", [])) == 1)
+        # op.pdf is in ledger even though file doesn't exist on disk
+        # (ledger is purely from planning, no disk checks)
+        check("ledger inv: planned op included", len(files2.get("OP Plăți", [])) == 1)
+
+        check("ledger inv: partition",
+              inv["WVWZZZ3CZWE000001"]["_partition"] == "SINDICALIZARE TEST FINAL")
+
+    finally:
+        shutil.rmtree(tmpdir, ignore_errors=True)
+
+
 if __name__ == "__main__":
     test_vin_helpers()
     test_categorization()
@@ -1585,6 +1672,7 @@ if __name__ == "__main__":
     test_partition_merging()
     test_rename_map_persistence()
     test_short_name_categorization()
+    test_ledger_based_inventory()
 
     print(f"\n{'='*60}")
     print(f"RESULTS: {PASS} passed, {FAIL} failed")
