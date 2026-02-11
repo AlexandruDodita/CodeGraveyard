@@ -31,6 +31,7 @@ import time
 import shutil
 import hashlib
 import datetime
+import threading
 import subprocess
 from pathlib import Path
 from collections import defaultdict
@@ -557,25 +558,29 @@ class Ledger:
         self.warnings: list = []
         self.pdf_scans: list = []
         self._planned_dests: dict = {}
+        self._lock = threading.Lock()
 
     def add(self, action, source, destination, reason="", parent_folder="", vin=""):
         dst_str = str(destination)
         src_str = str(source)
-        if action == "copy_file":
-            if dst_str in self._planned_dests:
-                if self._planned_dests[dst_str] == src_str:
-                    return
-            self._planned_dests[dst_str] = src_str
-        self.changes.append(Change(
-            action=action, source=src_str, destination=dst_str,
-            reason=reason, parent_folder=parent_folder, vin=vin,
-        ))
+        with self._lock:
+            if action == "copy_file":
+                if dst_str in self._planned_dests:
+                    if self._planned_dests[dst_str] == src_str:
+                        return
+                self._planned_dests[dst_str] = src_str
+            self.changes.append(Change(
+                action=action, source=src_str, destination=dst_str,
+                reason=reason, parent_folder=parent_folder, vin=vin,
+            ))
 
     def warn(self, msg):
-        self.warnings.append(msg)
+        with self._lock:
+            self.warnings.append(msg)
 
     def log_pdf_scan(self, path, vins_found):
-        self.pdf_scans.append((str(path), sorted(vins_found)))
+        with self._lock:
+            self.pdf_scans.append((str(path), sorted(vins_found)))
 
     def execute(self, dry_run=True, jsonl_path: Path = None, workers: int = 1):
         from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -932,6 +937,17 @@ def _file_hash(path_str: str) -> str:
         return f"__error_{path_str}"
     return h.hexdigest()
 
+# Pre-computed hash cache, populated in bulk by plan_category_renames
+_hash_cache: dict = {}
+
+def _cached_file_hash(path_str: str) -> str:
+    """Look up pre-computed hash, fall back to computing on the fly."""
+    if path_str in _hash_cache:
+        return _hash_cache[path_str]
+    h = _file_hash(path_str)
+    _hash_cache[path_str] = h
+    return h
+
 
 # Category → short filename (no VIN, no details)
 _CAT_SHORT_NAMES = {
@@ -956,17 +972,38 @@ def _detect_talon_civ(fn: str) -> tuple:
     return has_talon, has_civ
 
 
-def _rename_dedup_group(changes, indices, base_name, stats, original_names):
+def _rename_dedup_group(changes, indices, base_name, stats, original_names,
+                        skip_dedup=False):
     """Universal dedup+rename: identical files → single {base}.pdf,
-    different files → {base}_1.pdf, {base}_2.pdf, etc."""
+    different files → {base}_1.pdf, {base}_2.pdf, etc.
+    If skip_dedup=True, skip hashing and just assign numbered names."""
     if not indices:
         return set()
     remove = set()
 
-    # Hash source files
+    if skip_dedup or len(indices) == 1:
+        # No dedup: just assign short names
+        if len(indices) == 1:
+            c = changes[indices[0]]
+            dst = Path(c.destination)
+            new_name = f"{base_name}.pdf"
+            original_names[(c.vin, new_name)] = dst.name
+            c.destination = str(dst.parent / new_name)
+            stats["renamed"] += 1
+        else:
+            for counter, idx in enumerate(indices, 1):
+                c = changes[idx]
+                dst = Path(c.destination)
+                new_name = f"{base_name}_{counter}.pdf"
+                original_names[(c.vin, new_name)] = dst.name
+                c.destination = str(dst.parent / new_name)
+                stats["renamed"] += 1
+        return remove
+
+    # Hash source files for dedup
     hashes = {}
     for idx in indices:
-        hashes[idx] = _file_hash(changes[idx].source)
+        hashes[idx] = _cached_file_hash(changes[idx].source)
 
     # Group by hash
     by_hash = defaultdict(list)
@@ -1007,7 +1044,7 @@ def _rename_dedup_group(changes, indices, base_name, stats, original_names):
     return remove
 
 
-def _rename_talon_civ_group(changes, indices, stats, original_names):
+def _rename_talon_civ_group(changes, indices, stats, original_names, skip_dedup=False):
     """TALON/CIV: detect per-file whether it's talon, civ, or both,
     then dedup within each sub-group."""
     if not indices:
@@ -1030,15 +1067,18 @@ def _rename_talon_civ_group(changes, indices, stats, original_names):
 
     remove = set()
     for base, sub_indices in sub_groups.items():
-        rm = _rename_dedup_group(changes, sub_indices, base, stats, original_names)
+        rm = _rename_dedup_group(changes, sub_indices, base, stats, original_names,
+                                 skip_dedup=skip_dedup)
         remove |= rm
     return remove
 
 
-def plan_category_renames(ledger: Ledger):
+def plan_category_renames(ledger: Ledger, workers: int = 1, skip_dedup: bool = False):
     """Category-aware renaming and deduplication of planned copies.
     Returns (stats, original_names) where original_names maps
-    (vin, renamed_filename) → original_filename for Excel display."""
+    (vin, renamed_filename) → original_filename for Excel display.
+    If skip_dedup=True, skip file hashing entirely (for --inventory-only)."""
+    import concurrent.futures
     stats = {"renamed": 0, "deduped": 0}
     original_names = {}  # (vin, new_filename) → old_filename
 
@@ -1049,9 +1089,53 @@ def plan_category_renames(ledger: Ledger):
             continue
         by_vin[c.vin].append(i)
 
+    # ── Pre-hash all unique source files in parallel (I/O-bound → threads) ──
+    if not skip_dedup:
+        sources_to_hash = set()
+        for vin, indices in by_vin.items():
+            by_cat = defaultdict(list)
+            for idx in indices:
+                c = ledger.changes[idx]
+                fn = Path(c.destination).name
+                cat = categorize_file(fn)
+                if cat is not None and cat in _CAT_SHORT_NAMES:
+                    by_cat[cat].append(idx)
+            # Only need hashes when 2+ files in a category (dedup candidate)
+            for cat, cat_indices in by_cat.items():
+                if len(cat_indices) > 1:
+                    for idx in cat_indices:
+                        sources_to_hash.add(ledger.changes[idx].source)
+
+        if sources_to_hash:
+            global _hash_cache
+            hash_list = [s for s in sources_to_hash if s not in _hash_cache]
+            if hash_list:
+                bar_h = tqdm(total=len(hash_list), desc="Hashing files", unit="file",
+                             bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} "
+                             "[{elapsed}<{remaining}, {rate_fmt}]")
+                if workers > 1:
+                    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
+                        futs = {pool.submit(_file_hash, s): s for s in hash_list}
+                        for f in concurrent.futures.as_completed(futs):
+                            src = futs[f]
+                            try:
+                                _hash_cache[src] = f.result()
+                            except Exception:
+                                _hash_cache[src] = f"__error_{src}"
+                            bar_h.update(1)
+                else:
+                    for s in hash_list:
+                        _hash_cache[s] = _file_hash(s)
+                        bar_h.update(1)
+                bar_h.close()
+
     remove_all = set()
 
+    bar = tqdm(total=len(by_vin), desc="Category renames", unit="vin",
+               bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]")
+
     for vin, indices in by_vin.items():
+        bar.update(1)
         # Sub-group by category
         by_cat = defaultdict(list)
         for idx in indices:
@@ -1067,13 +1151,17 @@ def plan_category_renames(ledger: Ledger):
                 continue
             if cat == "TALON / CIV":
                 rm = _rename_talon_civ_group(
-                    ledger.changes, by_cat[cat], stats, original_names)
+                    ledger.changes, by_cat[cat], stats, original_names,
+                    skip_dedup=skip_dedup)
             else:
                 rm = _rename_dedup_group(
-                    ledger.changes, by_cat[cat], short, stats, original_names)
+                    ledger.changes, by_cat[cat], short, stats, original_names,
+                    skip_dedup=skip_dedup)
             remove_all |= rm
 
         # Alte Documente: no rename
+
+    bar.close()
 
     # Remove deduped entries
     if remove_all:
@@ -1608,8 +1696,9 @@ def plan_flat(folder: Path, out_partition: Path, ledger: Ledger, scan_pdf: bool)
 # ── Scanning and planning ───────────────────────────────────────────────────
 
 def scan_and_plan(root: Path, output_root: Path, ledger: Ledger, scan_pdf: bool,
-                  range_start: int = 0, range_end: int = 0):
+                  range_start: int = 0, range_end: int = 0, workers: int = 1):
     stats = defaultdict(int)
+    stats_lock = threading.Lock()
 
     all_folders = []
     for part_dir in _get_partition_dirs(root, range_start, range_end):
@@ -1620,17 +1709,18 @@ def scan_and_plan(root: Path, output_root: Path, ledger: Ledger, scan_pdf: bool,
         except PermissionError:
             pass
 
-    bar = tqdm(all_folders, desc="Scanning folders", unit="folder",
+    bar = tqdm(total=len(all_folders), desc="Scanning folders", unit="folder",
                bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]")
 
-    for cdir, partition_name in bar:
-        bar.set_postfix_str(cdir.name[:40], refresh=False)
+    def _process_folder(cdir, partition_name):
         out_partition = output_root / merge_partition_name(partition_name)
 
         if is_vin(cdir.name):
-            stats["vin_named"] += 1
+            with stats_lock:
+                stats["vin_named"] += 1
             plan_vin_folder(cdir, out_partition, ledger)
-            continue
+            bar.update(1)
+            return
 
         vin_subdirs = []
         has_files = False
@@ -1643,19 +1733,40 @@ def scan_and_plan(root: Path, output_root: Path, ledger: Ledger, scan_pdf: bool,
                 elif sub.is_file(): has_files = True
         except PermissionError:
             ledger.warn(f"Cannot read '{cdir.name}'")
-            stats["error"] += 1
-            continue
+            with stats_lock:
+                stats["error"] += 1
+            bar.update(1)
+            return
 
         if not vin_subdirs and not has_files and not has_other_dirs:
-            continue
+            bar.update(1)
+            return
 
         if vin_subdirs:
-            stats["multi_car"] += 1
+            with stats_lock:
+                stats["multi_car"] += 1
             plan_multi_car(cdir, vin_subdirs, out_partition, ledger, scan_pdf)
         else:
-            stats["flat"] += 1
+            with stats_lock:
+                stats["flat"] += 1
             plan_flat(cdir, out_partition, ledger, scan_pdf)
+        bar.update(1)
 
+    if workers > 1:
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            futs = [pool.submit(_process_folder, cdir, pname)
+                    for cdir, pname in all_folders]
+            for f in as_completed(futs):
+                try:
+                    f.result()
+                except Exception as exc:
+                    tqdm.write(f"  WARNING: Folder scan error: {exc}")
+    else:
+        for cdir, partition_name in all_folders:
+            _process_folder(cdir, partition_name)
+
+    bar.close()
     return stats
 
 
@@ -1692,12 +1803,13 @@ def plan_pdf_cross_copies(ledger: Ledger, output_root: Path):
     # Process all planned copy_file ops for PDFs
     # Snapshot the list since we'll append
     original_changes = list(ledger.changes)
-    for c in original_changes:
-        if c.action != "copy_file":
-            continue
+    pdf_changes = [c for c in original_changes if c.action == "copy_file"
+                   and Path(c.source).suffix.lower() == '.pdf']
+    bar = tqdm(total=len(pdf_changes), desc="Cross-copy check", unit="pdf",
+               bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]")
+    for c in pdf_changes:
+        bar.update(1)
         src = Path(c.source)
-        if src.suffix.lower() != '.pdf':
-            continue
 
         # Get content VINs from cache
         content_vins = _pdf_cache.get(str(src), set())
@@ -1727,6 +1839,7 @@ def plan_pdf_cross_copies(ledger: Ledger, output_root: Path):
             already_planned.add((str(src), vin))
             stats["cross_copied"] += 1
 
+    bar.close()
     return stats
 
 
@@ -2406,7 +2519,8 @@ def main():
         # Category renames → gives us original_names mapping
         original_names = {}
         if args.rename_files:
-            _, original_names = plan_category_renames(ledger)
+            _, original_names = plan_category_renames(
+                ledger, workers=workers, skip_dedup=True)
 
         # Save rename map for future runs
         if original_names:
@@ -2539,7 +2653,7 @@ def main():
     rename_stats = {}
     original_names = {}  # (vin, renamed_fn) → original_fn
     if args.rename_files:
-        rename_stats, original_names = plan_category_renames(ledger)
+        rename_stats, original_names = plan_category_renames(ledger, workers=workers)
 
     # Summary
     print(f"\n{'='*70}")
